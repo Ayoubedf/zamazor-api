@@ -1,3 +1,21 @@
 spring:
   application:
     name: zamazor
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASS}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+      dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  security:
+    jwt:
+      secret: ${SECRET_KEY}
+      expiration-ms: 86_400_000
+      issuer: auth-service
