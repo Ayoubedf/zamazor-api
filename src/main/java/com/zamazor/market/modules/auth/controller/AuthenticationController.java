@@ -30,4 +30,9 @@ public class AuthenticationController {
         return ResponseEntity.ok(authenticationService.authenticate(request));
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<UserDto> me() {
+        return ResponseEntity.ok(authenticationService.me());
+    }
+
 }
