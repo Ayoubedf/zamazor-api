@@ -1,5 +1,6 @@
 package com.zamazor.market.config;
 
+import com.zamazor.market.modules.auth.exception.EmailAlreadyExistsException;
 import io.jsonwebtoken.ExpiredJwtException;
 import org.jspecify.annotations.NonNull;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
@@ -29,7 +30,8 @@ public class ExceptionResolver extends ResponseEntityExceptionHandler {
             case AccessDeniedException e -> createProblemDetail(403, e.getMessage(), "Unauthorized to access this resource");
             case SignatureException e -> createProblemDetail(403, e.getMessage(), "Invalid JWT Signature");
             case ExpiredJwtException e -> createProblemDetail(403, e.getMessage(), "JWT token has expired");
-            default -> createProblemDetail(401, exception.getMessage(), "Unknown internal server error.");
+            case EmailAlreadyExistsException e -> createProblemDetail(409, e.getMessage(), "Email already exists");
+            default -> createProblemDetail(401, exception.getMessage(), "Unknown internal server error");
         };
     }
 

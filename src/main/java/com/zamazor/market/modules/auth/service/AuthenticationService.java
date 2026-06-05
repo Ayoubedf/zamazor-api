@@ -1,6 +1,7 @@
 package com.zamazor.market.modules.auth.service;
 
 import com.zamazor.market.config.JwtService;
+import com.zamazor.market.modules.auth.exception.EmailAlreadyExistsException;
 import com.zamazor.market.modules.auth.models.dto.AuthenticationRequest;
 import com.zamazor.market.modules.auth.models.dto.AuthenticationResponse;
 import com.zamazor.market.modules.auth.models.dto.RegisterRequest;
@@ -28,14 +29,12 @@ public class AuthenticationService {
     private final JwtService jwtService;
 
     public UserDto register(RegisterRequest request) {
-        var user = User.builder()
-                .email(request.getEmail())
-                .password(Objects.requireNonNull(passwordEncoder.encode(request.getPassword())))
-                .name(request.getName())
-                .avatarUrl(null)
-                .birthDate(request.getBirthDate())
-                .isAdmin(false)
-                .build();
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new EmailAlreadyExistsException("An account with this email already exists");
+        }
+        var user = userMapper.toEntity(request);
+        user.setPassword(Objects.requireNonNull(passwordEncoder.encode(request.getPassword())));
+        user.setIsAdmin(false);
         return userMapper.toDto(userRepository.save(user));
     }
 

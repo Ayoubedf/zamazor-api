@@ -7,6 +7,7 @@ import lombok.Getter;
 
 import java.time.LocalDate;
 import java.time.Period;
+import java.time.ZoneOffset;
 
 @Getter
 @AllArgsConstructor
@@ -33,7 +34,7 @@ public class RegisterRequest {
     @JsonIgnore
     @AssertTrue(message = "You must be 18 years or older to register.")
     public boolean isAdult() {
-        if (birthDate == null) return true;
-        return Period.between(birthDate, LocalDate.now()).getYears() >= 18;
+        if (birthDate == null) return false;
+        return Period.between(birthDate, LocalDate.now(ZoneOffset.UTC)).getYears() >= 18;
     }
 }
