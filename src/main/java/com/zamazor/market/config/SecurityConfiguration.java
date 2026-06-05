@@ -1,5 +1,6 @@
 package com.zamazor.market.config;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,6 +30,14 @@ public class SecurityConfiguration {
                 )
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                    .logout(logout -> logout
+                    .logoutUrl("/auth/logout")
+                    .invalidateHttpSession(true)
+                    .clearAuthentication(true)
+                    .logoutSuccessHandler((request, response, authentication) -> {
+                        response.setStatus(HttpServletResponse.SC_OK);
+                    })
+                )
                 .build();
     }
 }
