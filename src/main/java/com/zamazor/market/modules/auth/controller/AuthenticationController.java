@@ -39,6 +39,18 @@ public class AuthenticationController {
         return ResponseEntity.ok(authenticationMapper.toAuthenticationResponse(authenticationResult));
     }
 
+	@PostMapping("/refresh")
+	public ResponseEntity<TokenRefreshResponse> refresh(
+			@CookieValue(name = CookieUtility.REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken,
+			HttpServletResponse response
+	) {
+		TokenPair tokenPair = authenticationService.refreshTokens(refreshToken);
+		ResponseCookie cookie = cookieUtility.createRefreshTokenCookie(tokenPair.getRefreshToken());
+
+		response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+		return ResponseEntity.ok(authenticationMapper.toRefreshResponse(tokenPair));
+	}
+
     @GetMapping("/me")
     public ResponseEntity<UserDto> me() {
         return ResponseEntity.ok(authenticationService.getCurrentUser());

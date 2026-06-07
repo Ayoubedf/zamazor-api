@@ -52,6 +52,30 @@ public class AuthenticationService {
         return new AuthenticationResult(refreshToken, accessToken, userDto);
     }
 
+    public TokenPair refreshTokens(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new UnauthorizedException("Refresh token is missing");
+        }
+
+        try {
+            String email = jwtService.extractRefreshUsername(refreshToken);
+            User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UnauthorizedException("User not found"));
+
+            if (!jwtService.isRefreshTokenValid(refreshToken, user)) {
+                throw new UnauthorizedException("Invalid refresh token credentials");
+            }
+
+            String newAccessToken = jwtService.generateAccessToken(user);
+            String newRefreshToken = jwtService.generateRefreshToken(user);
+
+            return new TokenPair(newAccessToken, newRefreshToken);
+
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new UnauthorizedException("Invalid or expired refresh token");
+        }
+    }
+
     public UserDto getCurrentUser() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
 
