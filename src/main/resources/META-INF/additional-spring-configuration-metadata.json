@@ -2,37 +2,48 @@
   "groups": [
     {
       "name": "spring.security.jwt",
-      "type": "com.zamazor.market.config.JwtService",
+      "type": "com.zamazor.market.config.JwtProperties",
       "description": "Root configuration for JSON Web Token settings."
+    },
+    {
+      "name": "spring.security.jwt.access",
+      "type": "com.zamazor.market.config.JwtProperties$Access",
+      "description": "Configuration settings for short-lived access tokens."
+    },
+    {
+      "name": "spring.security.jwt.refresh",
+      "type": "com.zamazor.market.config.JwtProperties$Refresh",
+      "description": "Configuration settings for long-lived refresh tokens."
     }
   ],
   "properties": [
     {
-      "name": "spring.security.jwt.secret",
-      "type": "java.lang.String",
-      "description": "Secret key used for signing the tokens (HMAC-SHA)."
-    },
-    {
-      "name": "spring.security.jwt.expiration-ms",
-      "type": "java.lang.Long",
-      "description": "Token validity duration in milliseconds.",
-      "defaultValue": 3600000
-    },
-    {
       "name": "spring.security.jwt.issuer",
       "type": "java.lang.String",
-      "description": "Token issuer identity (iss)."
-    }
-  ],
-  "hints": [
+      "description": "The designated issuer embedded inside the JWT.",
+      "defaultValue": "auth-service"
+    },
     {
-      "name": "spring.security.jwt.issuer",
-      "values": [
-        {
-          "value": "auth-service",
-          "description": "Centralized authentication service."
-        }
-      ]
+      "name": "spring.security.jwt.access.secret",
+      "type": "java.lang.String",
+      "description": "Secret key used to sign and verify Access Tokens."
+    },
+    {
+      "name": "spring.security.jwt.access.expiration",
+      "type": "java.time.Duration",
+      "description": "Lifespan of the access token.",
+      "defaultValue": "15m"
+    },
+    {
+      "name": "spring.security.jwt.refresh.secret",
+      "type": "java.lang.String",
+      "description": "Secret key used to sign and verify Refresh Tokens."
+    },
+    {
+      "name": "spring.security.jwt.refresh.expiration",
+      "type": "java.time.Duration",
+      "description": "Lifespan of the refresh token.",
+      "defaultValue": "7d"
     }
   ]
 }
