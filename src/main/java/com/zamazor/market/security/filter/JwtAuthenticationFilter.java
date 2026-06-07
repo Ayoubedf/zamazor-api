@@ -1,5 +1,6 @@
-package com.zamazor.market.config;
+package com.zamazor.market.security.filter;
 
+import com.zamazor.market.security.crypto.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,10 +38,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         try {
             final String token = authorizationHeader.substring(7);
-            final String userEmail = jwtService.extractUsername(token);
+            final String userEmail = jwtService.extractAccessUsername(token);
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails user = this.userDetailsService.loadUserByUsername(userEmail);
-                if (jwtService.isTokenValid(token, user)) {
+                if (jwtService.isAccessTokenValid(token, user)) {
                     UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                             user,
                             null,
@@ -49,8 +50,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authenticationToken);
                 }
-                filterChain.doFilter(request, response);
             }
+            filterChain.doFilter(request, response);
         } catch (Exception exception) {
             handlerExceptionResolver.resolveException(request, response, null, exception);
         }

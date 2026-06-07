@@ -16,6 +16,10 @@ spring:
         format_sql: true
   security:
     jwt:
-      secret: ${SECRET_KEY}
-      expiration-ms: 86_400_000
+      refresh:
+        secret: ${REFRESH_TOKEN_SECRET_KEY:}
+        expiration: 7d
+      access:
+        secret: ${ACCESS_TOKEN_SECRET_KEY:}
+        expiration: 15m
       issuer: auth-service
