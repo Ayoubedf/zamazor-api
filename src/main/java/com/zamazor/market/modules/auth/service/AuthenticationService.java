@@ -1,6 +1,6 @@
 package com.zamazor.market.modules.auth.service;
 
-import com.zamazor.market.config.JwtService;
+import com.zamazor.market.security.crypto.JwtService;
 import com.zamazor.market.modules.auth.exception.EmailAlreadyExistsException;
 import com.zamazor.market.modules.auth.exception.UnauthorizedException;
 import com.zamazor.market.modules.auth.models.dto.*;

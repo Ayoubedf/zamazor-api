@@ -1,5 +1,6 @@
-package com.zamazor.market.config;
+package com.zamazor.market.security.filter;
 
+import com.zamazor.market.security.crypto.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

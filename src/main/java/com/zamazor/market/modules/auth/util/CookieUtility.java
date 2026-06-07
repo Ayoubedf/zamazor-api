@@ -1,6 +1,6 @@
 package com.zamazor.market.modules.auth.util;
 
-import com.zamazor.market.config.JwtProperties;
+import com.zamazor.market.security.config.JwtProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;

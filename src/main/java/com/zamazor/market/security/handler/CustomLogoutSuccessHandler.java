@@ -1,4 +1,4 @@
-package com.zamazor.market.config;
+package com.zamazor.market.security.handler;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

@@ -1,4 +1,4 @@
-package com.zamazor.market.config;
+package com.zamazor.market.security.handler;
 
 import com.zamazor.market.modules.auth.exception.EmailAlreadyExistsException;
 import com.zamazor.market.modules.auth.exception.UnauthorizedException;

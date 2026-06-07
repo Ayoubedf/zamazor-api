@@ -1,5 +1,6 @@
-package com.zamazor.market.config;
+package com.zamazor.market.security.crypto;
 
+import com.zamazor.market.security.config.JwtProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import jakarta.validation.constraints.NotNull;

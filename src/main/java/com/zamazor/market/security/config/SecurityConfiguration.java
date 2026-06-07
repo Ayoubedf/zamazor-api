@@ -1,6 +1,8 @@
-package com.zamazor.market.config;
+package com.zamazor.market.security.config;
 
+import com.zamazor.market.security.filter.JwtAuthenticationFilter;
 import com.zamazor.market.modules.auth.util.CookieUtility;
+import com.zamazor.market.security.handler.CustomLogoutSuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

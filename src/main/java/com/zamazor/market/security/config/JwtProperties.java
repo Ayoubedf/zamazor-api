@@ -1,4 +1,4 @@
-package com.zamazor.market.config;
+package com.zamazor.market.security.config;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
