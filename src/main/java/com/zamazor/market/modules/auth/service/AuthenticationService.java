@@ -2,13 +2,13 @@ package com.zamazor.market.modules.auth.service;
 
 import com.zamazor.market.config.JwtService;
 import com.zamazor.market.modules.auth.exception.EmailAlreadyExistsException;
-import com.zamazor.market.modules.auth.models.dto.AuthenticationRequest;
-import com.zamazor.market.modules.auth.models.dto.AuthenticationResponse;
-import com.zamazor.market.modules.auth.models.dto.RegisterRequest;
+import com.zamazor.market.modules.auth.exception.UnauthorizedException;
+import com.zamazor.market.modules.auth.models.dto.*;
 import com.zamazor.market.modules.user.models.mapper.UserMapper;
 import com.zamazor.market.modules.user.models.dto.UserDto;
 import com.zamazor.market.modules.user.models.entity.User;
 import com.zamazor.market.modules.user.repository.UserRepository;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -38,7 +38,7 @@ public class AuthenticationService {
         return userMapper.toDto(userRepository.save(user));
     }
 
-    public AuthenticationResponse authenticate(AuthenticationRequest request) {
+    public AuthenticationResult authenticate(AuthenticationRequest request) {
         var authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
@@ -46,12 +46,13 @@ public class AuthenticationService {
             throw new BadCredentialsException("Invalid Credentials");
         }
         var userDto = userMapper.toDto(user);
-        var token = jwtService.generateToken(user);
-        return new AuthenticationResponse(token, userDto);
+        var accessToken = jwtService.generateAccessToken(user);
+        var refreshToken = jwtService.generateRefreshToken(user);
+
+        return new AuthenticationResult(refreshToken, accessToken, userDto);
     }
 
-
-    public UserDto me() {
+    public UserDto getCurrentUser() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !(authentication.getPrincipal() instanceof User user)) {
