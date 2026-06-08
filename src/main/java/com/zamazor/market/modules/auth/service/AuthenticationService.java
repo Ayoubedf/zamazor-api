@@ -29,18 +29,18 @@ public class AuthenticationService {
     private final JwtService jwtService;
 
     public UserDto register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByEmail(request.email())) {
             throw new EmailAlreadyExistsException("An account with this email already exists");
         }
         var user = userMapper.toEntity(request);
-        user.setPassword(Objects.requireNonNull(passwordEncoder.encode(request.getPassword())));
+        user.setPassword(Objects.requireNonNull(passwordEncoder.encode(request.password())));
         user.setIsAdmin(false);
         return userMapper.toDto(userRepository.save(user));
     }
 
     public AuthenticationResult authenticate(AuthenticationRequest request) {
         var authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+                new UsernamePasswordAuthenticationToken(request.email(), request.password())
         );
         if (!(authentication.getPrincipal() instanceof User user)) {
             throw new BadCredentialsException("Invalid Credentials");
