@@ -1,8 +1,7 @@
-package com.zamazor.market.modules.product.models.dto.product;
+package com.zamazor.market.modules.product.models.dto;
 
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
-import org.hibernate.validator.constraints.URL;
 import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
@@ -10,8 +9,8 @@ import java.util.UUID;
 
 public record UpdateProductRequest(
     @Nullable @Size(min = 2, max = 200) String name,
-    @Nullable @Size(max = 2000) String description,
-    @Nullable @URL String imageUrl,
+    @Nullable @Size(max = 200) String description,
     @Nullable @Positive BigDecimal basePrice,
-    @Nullable UUID categoryId
+		@Nullable @Positive Integer stockQuantity,
+    @Nullable @org.hibernate.validator.constraints.UUID UUID categoryId
 ) { }
