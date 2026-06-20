@@ -12,6 +12,6 @@ public record CreateProductRequest(
     @NotBlank @Size(min = 2, max = 200) String name,
     @NotBlank @Size(max = 2000) String description,
     @NotNull @Positive BigDecimal price,
-		@NotNull @Positive Integer stockQuantity,
-    @NotNull @org.hibernate.validator.constraints.UUID UUID categoryId
+	@NotNull @Positive Integer stockQuantity,
+    @NotNull UUID categoryId
 ) { }

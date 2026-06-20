@@ -10,7 +10,7 @@ import java.util.UUID;
 public record UpdateProductRequest(
     @Nullable @Size(min = 2, max = 200) String name,
     @Nullable @Size(max = 200) String description,
-    @Nullable @Positive BigDecimal basePrice,
-		@Nullable @Positive Integer stockQuantity,
-    @Nullable @org.hibernate.validator.constraints.UUID UUID categoryId
+    @Nullable @Positive BigDecimal price,
+	@Nullable @Positive Integer stockQuantity,
+    @Nullable UUID categoryId
 ) { }
