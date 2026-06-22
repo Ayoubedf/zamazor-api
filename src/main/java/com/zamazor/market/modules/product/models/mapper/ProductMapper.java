@@ -15,5 +15,6 @@ public interface ProductMapper {
     @Mapping(target = "reservedQuantity", ignore = true)
     @Mapping(target = "store", ignore = true)
     @Mapping(target = "category", ignore = true)
+    @Mapping(target = "version", ignore = true)
     Product toEntity(CreateProductRequest request);
 }

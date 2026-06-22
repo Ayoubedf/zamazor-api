@@ -31,36 +31,40 @@ public class ProductService {
 	private final ProductMapper productMapper;
 	private final MediaStoragePort mediaStorage;
 
+	public List<ProductDto> getByCategory(UUID categoryId) {
+		if (!categoryRepository.existsById(categoryId)) {
+			throw new CategoryNotFoundException("Category with id: " + categoryId + " not found");
+		}
+		return productRepository.findByCategoryId(categoryId).stream()
+				.map(productMapper::toDto)
+				.toList();
+	}
+
+	public ProductDto getById(UUID id) {
+		return productRepository.findById(id)
+				.map(productMapper::toDto)
+				.orElseThrow(() -> new ProductNotFoundException("Product with id: " + id + " not found"));
+	}
+
+	public List<ProductDto> getAll() {
+		return productRepository.findAllWithAssociations().stream().map(productMapper::toDto).toList();
+	}
+
 	@Transactional
 	public ProductDto create(CreateProductRequest request, @NonNull MultipartFile  image) throws IOException {
 		var product = productMapper.toEntity(request);
 		var category =  categoryRepository.findById(request.categoryId())
 				.orElseThrow(() -> new CategoryNotFoundException("Category with id: " + request.categoryId() + " not found"));
-		product.setCategory(category);
 		var store = storeRepository.findOne()
 				.orElseThrow(() -> new IllegalStateException("The single store instance is missing from the database!"));
+
+		product.setCategory(category);
 		product.setStore(store);
 		StoredMediaMetadata metadata = mediaStorage.uploadImage(image.getInputStream(), image.getOriginalFilename(), "products");
 		String imageUrl = metadata.secureUrl();
 		product.setImageUrl(imageUrl);
 
 		return productMapper.toDto(productRepository.save(product));
-	}
-
-	public List<ProductDto> findByCategory(UUID categoryId) {
-		var category =  categoryRepository.findById(categoryId)
-				.orElseThrow(() -> new CategoryNotFoundException("Category with id: " + categoryId + " not found"));
-		return productRepository.findByCategory(category).stream().map(productMapper::toDto).toList();
-	}
-
-	public ProductDto findById(UUID id) {
-		var product = productRepository.findById(id)
-				.orElseThrow(() -> new ProductNotFoundException("Product with id: " + id + " not found"));
-		return productMapper.toDto(product);
-	}
-
-	public List<ProductDto> findAll() {
-		return productRepository.findAllWithAssociations().stream().map(productMapper::toDto).toList();
 	}
 
 	@Transactional
@@ -85,6 +89,9 @@ public class ProductService {
 	}
 
 	public void delete(UUID id) {
+		if (!productRepository.existsById(id)) {
+			throw new ProductNotFoundException("Product with id: " + id + " not found");
+		}
 		productRepository.deleteById(id);
 	}
 }
