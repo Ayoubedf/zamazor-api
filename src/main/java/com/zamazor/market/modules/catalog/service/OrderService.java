@@ -1,5 +1,6 @@
 package com.zamazor.market.modules.catalog.service;
 
+import com.zamazor.market.common.api.PageResponse;
 import com.zamazor.market.modules.catalog.exception.*;
 import com.zamazor.market.modules.catalog.models.dto.CheckoutRequest;
 import com.zamazor.market.modules.catalog.models.dto.OrderDto;
@@ -10,10 +11,11 @@ import com.zamazor.market.modules.catalog.repository.OrderRepository;
 import com.zamazor.market.modules.user.models.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Transactional(readOnly = true)
@@ -24,13 +26,14 @@ public class OrderService {
 	private final OrderRepository orderRepository;
 	private final OrderMapper orderMapper;
 
-	public List<OrderDto> getAll() {
-		return orderRepository.findAll().stream().map(orderMapper::toDto).toList();
+	public PageResponse<OrderDto> getAll(Pageable pageable) {
+		Page<OrderDto> orderPage = orderRepository.findAll(pageable).map(orderMapper::toDto);
+		return new PageResponse<>(orderPage);
 	}
 
-	public List<OrderDto> getByUserId(UUID userId) {
-		var orders = orderRepository.findByUserId(userId);
-		return orders.stream().map(orderMapper::toDto).toList();
+	public PageResponse<OrderDto> getByUserId(UUID userId, Pageable pageable) {
+		Page<OrderDto> orderPage = orderRepository.findByUserId(userId, pageable).map(orderMapper::toDto);
+		return new PageResponse<>(orderPage);
 	}
 
 	public OrderDto getById(UUID id) {

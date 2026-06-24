@@ -1,17 +1,24 @@
 package com.zamazor.market.modules.product.repository;
 
 import com.zamazor.market.modules.product.models.entity.Product;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
 import java.util.UUID;
 
 public interface ProductRepository extends JpaRepository<Product, UUID> {
-	@Query("SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.store")
-	List<Product> findAllWithAssociations();
+	@Query(
+			value = "SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.store",
+			countQuery = "SELECT count(p) FROM Product p"
+	)
+	Page<Product> findAllWithAssociations(Pageable pageable);
 
-	@Query("SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.store WHERE p.category.id = :categoryId")
-	List<Product> findByCategoryId(@Param("categoryId") UUID categoryId);
+	@Query(
+			value = "SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.store WHERE p.category.id = :categoryId",
+			countQuery = "SELECT count(p) FROM Product p WHERE p.category.id = :categoryId"
+	)
+	Page<Product> findByCategoryId(@Param("categoryId") UUID categoryId, Pageable pageable);
 }

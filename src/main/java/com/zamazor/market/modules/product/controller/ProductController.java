@@ -1,11 +1,14 @@
 package com.zamazor.market.modules.product.controller;
 
+import com.zamazor.market.common.api.PageResponse;
 import com.zamazor.market.modules.product.models.dto.CreateProductRequest;
 import com.zamazor.market.modules.product.models.dto.ProductDto;
 import com.zamazor.market.modules.product.models.dto.UpdateProductRequest;
 import com.zamazor.market.modules.product.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -13,7 +16,6 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.UUID;
 
 @RequestMapping("/products")
@@ -40,13 +42,22 @@ public class ProductController {
 	}
 
 	@GetMapping
-	public ResponseEntity<List<ProductDto>> getAll() {
-		return ResponseEntity.ok(productService.getAll());
+	public ResponseEntity<PageResponse<ProductDto>> getAll(
+			@RequestParam(defaultValue = "0") Integer page,
+			@RequestParam(defaultValue = "10") Integer size
+	) {
+		Pageable pageable = PageRequest.of(page, size);
+		return ResponseEntity.ok(productService.getAll(pageable));
 	}
 
 	@GetMapping("/category/{categoryId}")
-	public ResponseEntity<List<ProductDto>> getByCategory(@PathVariable UUID categoryId) {
-		return ResponseEntity.ok(productService.getByCategory(categoryId));
+	public ResponseEntity<PageResponse<ProductDto>> getByCategory(
+			@PathVariable UUID categoryId,
+			@RequestParam(defaultValue = "0") Integer page,
+			@RequestParam(defaultValue = "10") Integer size
+	) {
+		Pageable pageable = PageRequest.of(page, size);
+		return ResponseEntity.ok(productService.getByCategory(categoryId, pageable));
 	}
 
 	@PutMapping("/{id}")

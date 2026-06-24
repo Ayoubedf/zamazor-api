@@ -1,5 +1,6 @@
 package com.zamazor.market.modules.product.service;
 
+import com.zamazor.market.common.api.PageResponse;
 import com.zamazor.market.domain.media.model.StoredMediaMetadata;
 import com.zamazor.market.domain.media.ports.MediaStoragePort;
 import com.zamazor.market.modules.product.exception.CategoryNotFoundException;
@@ -13,12 +14,13 @@ import com.zamazor.market.modules.product.repository.ProductRepository;
 import com.zamazor.market.modules.product.repository.StoreRepository;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -31,13 +33,14 @@ public class ProductService {
 	private final ProductMapper productMapper;
 	private final MediaStoragePort mediaStorage;
 
-	public List<ProductDto> getByCategory(UUID categoryId) {
+	public PageResponse<ProductDto> getByCategory(UUID categoryId, Pageable pageable) {
 		if (!categoryRepository.existsById(categoryId)) {
 			throw new CategoryNotFoundException("Category with id: " + categoryId + " not found");
 		}
-		return productRepository.findByCategoryId(categoryId).stream()
-				.map(productMapper::toDto)
-				.toList();
+
+		Page<ProductDto> productPage = productRepository
+				.findByCategoryId(categoryId, pageable).map(productMapper::toDto);
+		return new PageResponse<>(productPage);
 	}
 
 	public ProductDto getById(UUID id) {
@@ -46,8 +49,10 @@ public class ProductService {
 				.orElseThrow(() -> new ProductNotFoundException("Product with id: " + id + " not found"));
 	}
 
-	public List<ProductDto> getAll() {
-		return productRepository.findAllWithAssociations().stream().map(productMapper::toDto).toList();
+	public PageResponse<ProductDto> getAll(Pageable pageable) {
+		Page<ProductDto> productPage = productRepository
+				.findAllWithAssociations(pageable).map(productMapper::toDto);
+		return new PageResponse<>(productPage);
 	}
 
 	@Transactional

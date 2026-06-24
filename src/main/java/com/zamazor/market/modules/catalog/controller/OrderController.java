@@ -1,17 +1,19 @@
 package com.zamazor.market.modules.catalog.controller;
 
+import com.zamazor.market.common.api.PageResponse;
 import com.zamazor.market.modules.catalog.models.dto.CheckoutRequest;
 import com.zamazor.market.modules.catalog.models.dto.OrderDto;
 import com.zamazor.market.modules.catalog.service.OrderService;
 import com.zamazor.market.modules.user.models.entity.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -22,13 +24,22 @@ public class OrderController {
 
 	@PreAuthorize("hasRole('ADMIN')")
 	@GetMapping
-	public ResponseEntity<List<OrderDto>> getAllOrders() {
-		return ResponseEntity.ok(orderService.getAll());
+	public ResponseEntity<PageResponse<OrderDto>> getAllOrders(
+			@RequestParam(defaultValue = "0") Integer page,
+			@RequestParam(defaultValue = "10") Integer size
+	) {
+		Pageable pageable = PageRequest.of(page, size);
+		return ResponseEntity.ok(orderService.getAll(pageable));
 	}
 
 	@GetMapping("/me")
-	public ResponseEntity<List<OrderDto>> getMyOrders(@AuthenticationPrincipal User user) {
-		return ResponseEntity.ok(orderService.getByUserId(user.getId()));
+	public ResponseEntity<PageResponse<OrderDto>> getMyOrders(
+			@AuthenticationPrincipal User user,
+			@RequestParam(defaultValue = "0") Integer page,
+			@RequestParam(defaultValue = "10") Integer size
+	) {
+		Pageable pageable = PageRequest.of(page, size);
+		return ResponseEntity.ok(orderService.getByUserId(user.getId(), pageable));
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
