@@ -13,6 +13,5 @@ public interface UserMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "password", ignore = true)
     @Mapping(target = "isAdmin", ignore = true)
-    @Mapping(target = "avatarUrl", ignore = true)
     User toEntity(RegisterRequest request);
 }
