@@ -3,6 +3,7 @@ package com.zamazor.market.modules.catalog.controller;
 import com.zamazor.market.common.api.PageResponse;
 import com.zamazor.market.modules.catalog.models.dto.CheckoutRequest;
 import com.zamazor.market.modules.catalog.models.dto.OrderDto;
+import com.zamazor.market.modules.catalog.models.entity.OrderStatus;
 import com.zamazor.market.modules.catalog.service.OrderService;
 import com.zamazor.market.modules.user.models.entity.User;
 import jakarta.validation.Valid;
@@ -25,11 +26,13 @@ public class OrderController {
 	@PreAuthorize("hasRole('ADMIN')")
 	@GetMapping
 	public ResponseEntity<PageResponse<OrderDto>> getAllOrders(
+			@RequestParam(required = false) String userFullName,
+			@RequestParam(required = false) @Valid OrderStatus status,
 			@RequestParam(defaultValue = "0") Integer page,
 			@RequestParam(defaultValue = "10") Integer size
 	) {
 		Pageable pageable = PageRequest.of(page, size);
-		return ResponseEntity.ok(orderService.getAll(pageable));
+		return ResponseEntity.ok(orderService.getAll(userFullName, status, pageable));
 	}
 
 	@GetMapping("/me")
@@ -50,8 +53,8 @@ public class OrderController {
 	}
 
 	@PostMapping("/checkout")
-	public ResponseEntity<OrderDto> checkout(@RequestParam UUID userId, @Valid @RequestBody CheckoutRequest request) {
-		return ResponseEntity.ok(orderService.checkout(userId, request));
+	public ResponseEntity<OrderDto> checkout(@AuthenticationPrincipal User user, @Valid @RequestBody CheckoutRequest request) {
+		return ResponseEntity.ok(orderService.checkout(user.getId(), request));
 	}
 
 	@PostMapping("/{orderId}/cancel")

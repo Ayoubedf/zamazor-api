@@ -8,6 +8,7 @@ import com.zamazor.market.modules.catalog.models.mapper.CartMapper;
 import com.zamazor.market.modules.catalog.repository.CartRepository;
 import com.zamazor.market.modules.product.exception.ProductNotFoundException;
 import com.zamazor.market.modules.product.repository.ProductRepository;
+import com.zamazor.market.modules.user.models.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,15 +30,21 @@ public class CartService {
 	}
 
 	@Transactional
-	public CartDto addItemToCart(UUID userId, AddToCartRequest request) {
-		var cart = cartRepository.findByUserId(userId)
-				.orElseThrow(() -> new CartNotFoundException("Cart not found for user: " + userId));
+	public CartDto addItemToCart(User user, AddToCartRequest request) {
+		var cart = cartRepository.findByUserId(user.getId())
+				.orElseGet(() -> {
+					Cart newCart = new Cart();
+					newCart.setUser(user);
+					return cartRepository.save(newCart);
+				});
 		var product = productRepository.findById(request.productId())
 				.orElseThrow(() -> new ProductNotFoundException("Product not found"));
 
 		cart.addProduct(product, request.quantity());
 
-		return cartMapper.toDto(cart);
+		var savedCart = cartRepository.saveAndFlush(cart);
+
+		return cartMapper.toDto(savedCart);
 	}
 
 	@Transactional

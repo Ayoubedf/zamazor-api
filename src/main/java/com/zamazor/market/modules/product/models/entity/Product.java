@@ -60,7 +60,8 @@ public class Product {
 	private List<CartItem> cartItems = new ArrayList<>();
 
 	@Version
-	private Long version;
+	@Column(name = "version", nullable = false)
+	private Long version = 0L;
 
 	@CreatedDate
 	@Column(name = "created_at", nullable = false, updatable = false, insertable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
