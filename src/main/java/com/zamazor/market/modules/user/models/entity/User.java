@@ -1,5 +1,7 @@
 package com.zamazor.market.modules.user.models.entity;
 
+import com.zamazor.market.modules.catalog.models.entity.Cart;
+import com.zamazor.market.modules.catalog.models.entity.Order;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -65,4 +67,9 @@ public class User implements UserDetails {
 		return email;
 	}
 
+	@OneToOne(mappedBy = "user")
+	private Cart cart;
+
+	@OneToMany(mappedBy = "user", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+	private List<Order> orders;
 }

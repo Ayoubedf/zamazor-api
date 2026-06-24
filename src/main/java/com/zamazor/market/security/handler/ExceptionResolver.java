@@ -3,6 +3,10 @@ package com.zamazor.market.security.handler;
 import com.zamazor.market.infrastructure.media.exception.MediaStorageException;
 import com.zamazor.market.modules.auth.exception.EmailAlreadyExistsException;
 import com.zamazor.market.modules.auth.exception.UnauthorizedException;
+import com.zamazor.market.modules.catalog.exception.CartNotFoundException;
+import com.zamazor.market.modules.catalog.exception.EmptyCartException;
+import com.zamazor.market.modules.catalog.exception.OrderNotFoundException;
+import com.zamazor.market.modules.catalog.exception.OutOfStockException;
 import com.zamazor.market.modules.product.exception.CategoryNotFoundException;
 import com.zamazor.market.modules.product.exception.ProductNotFoundException;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -42,6 +46,10 @@ public class ExceptionResolver extends ResponseEntityExceptionHandler {
 			case ProductNotFoundException e -> createProblemDetail(404, e.getMessage(), "Product Not Found");
 			case CategoryNotFoundException e -> createProblemDetail(404, e.getMessage(), "Category Not Found");
 			case MediaStorageException e -> createProblemDetail(500, e.getMessage(), "Media storage service failed to process asset");
+			case CartNotFoundException e -> createProblemDetail(404, e.getMessage(), "Cart Not Found");
+			case OrderNotFoundException e -> createProblemDetail(404, e.getMessage(), "Order Not Found");
+			case EmptyCartException e -> createProblemDetail(400, e.getMessage(), "Cart is Empty");
+			case OutOfStockException e -> createProblemDetail(409, e.getMessage(), "Insufficient Product Stock");
 			default -> createProblemDetail(500, exception.getMessage(), "Unknown internal server error");
 		};
 	}

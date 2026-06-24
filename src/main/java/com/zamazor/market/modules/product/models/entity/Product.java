@@ -1,9 +1,14 @@
 package com.zamazor.market.modules.product.models.entity;
 
+import com.zamazor.market.modules.catalog.exception.OutOfStockException;
+import com.zamazor.market.modules.catalog.models.entity.CartItem;
+import com.zamazor.market.modules.catalog.models.entity.OrderItem;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -15,34 +20,57 @@ import java.util.UUID;
 @Entity
 @Table(name = "products")
 public class Product {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.UUID)
+	private UUID id;
 
-    private String name;
+	private String name;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+	@Column(columnDefinition = "TEXT")
+	private String description;
 
-    @Column(precision = 10, scale = 2, nullable = false)
-    private BigDecimal price;
+	@Column(precision = 10, scale = 2, nullable = false)
+	private BigDecimal price;
 
-    @Column(name = "image_url", columnDefinition = "TEXT", nullable = false)
-    private String imageUrl;
+	@Column(name = "image_url", columnDefinition = "TEXT", nullable = false)
+	private String imageUrl;
 
-    @Builder.Default
-    @Column(name = "stock_quantity", nullable = false)
-    private Integer stockQuantity = 0;
+	@Builder.Default
+	@Column(name = "stock_quantity", nullable = false)
+	private Integer stockQuantity = 0;
 
-    @Builder.Default
-    @Column(name = "reserved_quantity", nullable = false)
-    private Integer reservedQuantity = 0;
+	@Builder.Default
+	@Column(name = "reserved_quantity", nullable = false)
+	private Integer reservedQuantity = 0;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "store_id",  nullable = false)
-    private Store store;
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "store_id",  nullable = false)
+	private Store store;
 
-    @ManyToOne(fetch = FetchType.LAZY,  optional = false)
-    @JoinColumn(name = "category_id",  nullable = false)
-    private Category category;
+	@ManyToOne(fetch = FetchType.LAZY,  optional = false)
+	@JoinColumn(name = "category_id",  nullable = false)
+	private Category category;
+
+	@OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
+	private List<OrderItem> orderItems = new ArrayList<>();
+
+	@OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
+	private List<CartItem> cartItems = new ArrayList<>();
+
+	@Version
+	private Long version;
+
+	public void deductStock(int quantity) {
+		if (this.stockQuantity < quantity) {
+			throw new OutOfStockException("Not enough stock for: " + this.name);
+		}
+		this.stockQuantity -= quantity;
+	}
+
+	public void restoreStock(Integer quantity) {
+		if (quantity == null || quantity <= 0) {
+			throw new IllegalArgumentException("Quantity to restore must be greater than zero");
+		}
+		this.stockQuantity += quantity;
+	}
 }

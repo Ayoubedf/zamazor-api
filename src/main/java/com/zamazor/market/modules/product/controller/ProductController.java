@@ -36,17 +36,17 @@ public class ProductController {
 
 	@GetMapping("/{id}")
 	public ResponseEntity<ProductDto> getById(@PathVariable UUID id) {
-		return ResponseEntity.ok(productService.findById(id));
+		return ResponseEntity.ok(productService.getById(id));
 	}
 
 	@GetMapping
 	public ResponseEntity<List<ProductDto>> getAll() {
-		return ResponseEntity.ok(productService.findAll());
+		return ResponseEntity.ok(productService.getAll());
 	}
 
 	@GetMapping("/category/{categoryId}")
 	public ResponseEntity<List<ProductDto>> getByCategory(@PathVariable UUID categoryId) {
-		return ResponseEntity.ok(productService.findByCategory(categoryId));
+		return ResponseEntity.ok(productService.getByCategory(categoryId));
 	}
 
 	@PutMapping("/{id}")

@@ -16,6 +16,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
 
@@ -28,6 +29,7 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
+    @Transactional
     public UserDto register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new EmailAlreadyExistsException("An account with this email already exists");
@@ -60,7 +62,7 @@ public class AuthenticationService {
         try {
             String email = jwtService.extractRefreshUsername(refreshToken);
             User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UnauthorizedException("User not found"));
+                    .orElseThrow(() -> new UnauthorizedException("User not found"));
 
             if (!jwtService.isRefreshTokenValid(refreshToken, user)) {
                 throw new UnauthorizedException("Invalid refresh token credentials");
@@ -80,7 +82,7 @@ public class AuthenticationService {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !(authentication.getPrincipal() instanceof User user)) {
-            throw new BadCredentialsException("User not authenticated");
+            throw new UnauthorizedException("User not authenticated");
         }
 
         return userMapper.toDto(user);

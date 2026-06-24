@@ -15,19 +15,19 @@ import java.util.UUID;
 @Entity
 @Table(name = "stores")
 public class Store {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.UUID)
+	private UUID id;
 
-    @Column(unique = true, length = 20)
-    private String name;
+	@Column(unique = true, length = 20)
+	private String name;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+	@Column(columnDefinition = "TEXT")
+	private String description;
 
-    @Column(name = "logo_url", columnDefinition = "TEXT")
-    private String logoUrl;
+	@Column(name = "logo_url", columnDefinition = "TEXT")
+	private String logoUrl;
 
-    @OneToMany(mappedBy = "store", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Product> products;
+	@OneToMany(mappedBy = "store", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	private List<Product> products;
 }
