@@ -6,6 +6,7 @@ import com.zamazor.market.modules.user.models.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -35,6 +36,8 @@ public class Order {
 	@OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<OrderItem> items = new ArrayList<>();
 
+	@CreatedDate
+	@Column(name = "created_at", nullable = false, updatable = false, insertable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
 	private LocalDateTime createdAt;
 
 	public void addOrderItem(OrderItem orderItem) {
@@ -46,7 +49,6 @@ public class Order {
 		Order order = new Order();
 		order.setUser(cart.getUser());
 		order.setStatus(OrderStatus.PENDING);
-		order.setCreatedAt(LocalDateTime.now());
 
 		BigDecimal calculatedTotal = BigDecimal.ZERO;
 		for (CartItem cartItem : cart.getItems()) {

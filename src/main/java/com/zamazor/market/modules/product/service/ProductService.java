@@ -8,19 +8,23 @@ import com.zamazor.market.modules.product.exception.ProductNotFoundException;
 import com.zamazor.market.modules.product.models.dto.CreateProductRequest;
 import com.zamazor.market.modules.product.models.dto.ProductDto;
 import com.zamazor.market.modules.product.models.dto.UpdateProductRequest;
+import com.zamazor.market.modules.product.models.entity.Product;
 import com.zamazor.market.modules.product.models.mapper.ProductMapper;
 import com.zamazor.market.modules.product.repository.CategoryRepository;
 import com.zamazor.market.modules.product.repository.ProductRepository;
 import com.zamazor.market.modules.product.repository.StoreRepository;
+import com.zamazor.market.modules.product.specification.ProductSpecifications;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Service
@@ -32,28 +36,6 @@ public class ProductService {
 	private final StoreRepository storeRepository;
 	private final ProductMapper productMapper;
 	private final MediaStoragePort mediaStorage;
-
-	public PageResponse<ProductDto> getByCategory(UUID categoryId, Pageable pageable) {
-		if (!categoryRepository.existsById(categoryId)) {
-			throw new CategoryNotFoundException("Category with id: " + categoryId + " not found");
-		}
-
-		Page<ProductDto> productPage = productRepository
-				.findByCategoryId(categoryId, pageable).map(productMapper::toDto);
-		return new PageResponse<>(productPage);
-	}
-
-	public ProductDto getById(UUID id) {
-		return productRepository.findById(id)
-				.map(productMapper::toDto)
-				.orElseThrow(() -> new ProductNotFoundException("Product with id: " + id + " not found"));
-	}
-
-	public PageResponse<ProductDto> getAll(Pageable pageable) {
-		Page<ProductDto> productPage = productRepository
-				.findAllWithAssociations(pageable).map(productMapper::toDto);
-		return new PageResponse<>(productPage);
-	}
 
 	@Transactional
 	public ProductDto create(CreateProductRequest request, @NonNull MultipartFile  image) throws IOException {
@@ -70,6 +52,42 @@ public class ProductService {
 		product.setImageUrl(imageUrl);
 
 		return productMapper.toDto(productRepository.save(product));
+	}
+
+	public PageResponse<ProductDto> getAll(Pageable pageable) {
+		Page<ProductDto> productPage = productRepository
+				.findAllWithAssociations(pageable).map(productMapper::toDto);
+		return new PageResponse<>(productPage);
+	}
+
+	public PageResponse<ProductDto> getByCategory(UUID categoryId, Pageable pageable) {
+		if (!categoryRepository.existsById(categoryId)) {
+			throw new CategoryNotFoundException("Category with id: " + categoryId + " not found");
+		}
+
+		Page<ProductDto> productPage = productRepository
+				.findByCategoryId(categoryId, pageable).map(productMapper::toDto);
+		return new PageResponse<>(productPage);
+	}
+
+	public PageResponse<ProductDto> search(
+			String query,
+			UUID categoryId,
+			BigDecimal minPrice,
+			BigDecimal maxPrice,
+			Pageable pageable
+	) {
+		Specification<Product> spec = ProductSpecifications.createSpec(query, categoryId, minPrice, maxPrice);
+		Page<ProductDto> productPage = productRepository
+				.findAll(spec, pageable).map(productMapper::toDto);
+
+		return new PageResponse<>(productPage);
+	}
+
+	public ProductDto getById(UUID id) {
+		return productRepository.findById(id)
+				.map(productMapper::toDto)
+				.orElseThrow(() -> new ProductNotFoundException("Product with id: " + id + " not found"));
 	}
 
 	@Transactional

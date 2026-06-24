@@ -9,6 +9,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @RequestMapping("/products")
@@ -58,6 +61,17 @@ public class ProductController {
 	) {
 		Pageable pageable = PageRequest.of(page, size);
 		return ResponseEntity.ok(productService.getByCategory(categoryId, pageable));
+	}
+
+	@GetMapping("/search")
+	public ResponseEntity<PageResponse<ProductDto>> search(
+			@RequestParam String q,
+			@RequestParam(required = false) UUID categoryId,
+			@RequestParam(required = false) BigDecimal minPrice,
+			@RequestParam(required = false) BigDecimal maxPrice,
+			@PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+	) {
+		return ResponseEntity.ok(productService.search(q, categoryId, minPrice, maxPrice, pageable));
 	}
 
 	@PutMapping("/{id}")

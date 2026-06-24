@@ -5,8 +5,10 @@ import com.zamazor.market.modules.catalog.models.entity.CartItem;
 import com.zamazor.market.modules.catalog.models.entity.OrderItem;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -59,6 +61,10 @@ public class Product {
 
 	@Version
 	private Long version;
+
+	@CreatedDate
+	@Column(name = "created_at", nullable = false, updatable = false, insertable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+	private LocalDateTime createdAt;
 
 	public void deductStock(int quantity) {
 		if (this.stockQuantity < quantity) {
