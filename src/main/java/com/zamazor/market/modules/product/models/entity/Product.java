@@ -49,11 +49,11 @@ public class Product {
 	private Integer reservedQuantity = 0;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "store_id",  nullable = false)
+	@JoinColumn(name = "store_id", nullable = false)
 	private Store store;
 
-	@ManyToOne(fetch = FetchType.EAGER,  optional = false)
-	@JoinColumn(name = "category_id",  nullable = false)
+	@ManyToOne(fetch = FetchType.EAGER, optional = false)
+	@JoinColumn(name = "category_id", nullable = false)
 	private Category category;
 
 	@Builder.Default

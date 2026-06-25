@@ -9,8 +9,8 @@ import java.util.UUID;
 
 public record UpdateProductRequest(
 		@Nullable @Size(min = 2, max = 200) String name,
-    @Nullable @Size(max = 200) String description,
-    @Nullable @Positive BigDecimal price,
+		@Nullable @Size(max = 200) String description,
+		@Nullable @Positive BigDecimal price,
 		@Nullable @Positive Integer stockQuantity,
-    @Nullable UUID categoryId
+		@Nullable UUID categoryId
 ) { }

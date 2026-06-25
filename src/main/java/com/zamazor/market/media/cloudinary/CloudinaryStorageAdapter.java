@@ -14,37 +14,37 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Component
 public class CloudinaryStorageAdapter implements MediaStoragePort {
-    private final Cloudinary cloudinary;
+	private final Cloudinary cloudinary;
 
-    @Override
-    public StoredMediaMetadata upload(InputStream inputStream, String fileName, String folderPath) {
-        try {
-            byte[] fileBytes = inputStream.readAllBytes();
+	@Override
+	public StoredMediaMetadata upload(InputStream inputStream, String fileName, String folderPath) {
+		try {
+			byte[] fileBytes = inputStream.readAllBytes();
 
-            Map<?, ?> uploadResult = cloudinary.uploader().upload(fileBytes, ObjectUtils.asMap(
-                    "folder", "zamazor/" + folderPath,
-                    "use_filename", true,
-                    "unique_filename", true,
-                    "overwrite", false
-            ));
+			Map<?, ?> uploadResult = cloudinary.uploader().upload(fileBytes, ObjectUtils.asMap(
+					"folder", "zamazor/" + folderPath,
+					"use_filename", true,
+					"unique_filename", true,
+					"overwrite", false
+			));
 
-            return new StoredMediaMetadata(
-                    uploadResult.get("public_id").toString(),
-                    uploadResult.get("secure_url").toString(),
-                    uploadResult.get("format").toString()
-            );
+			return new StoredMediaMetadata(
+					uploadResult.get("public_id").toString(),
+					uploadResult.get("secure_url").toString(),
+					uploadResult.get("format").toString()
+			);
 
-        } catch (Exception e) {
-            throw new MediaStorageException("Failed to upload image file: " + fileName, e);
-        }
-    }
+		} catch (Exception e) {
+			throw new MediaStorageException("Failed to upload image file: " + fileName, e);
+		}
+	}
 
-    @Override
-    public void delete(String publicId) {
-        try {
-            cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
-        } catch (Exception e) {
-            throw new MediaStorageException("Failed to delete asset with public ID: " + publicId, e);
-        }
-    }
+	@Override
+	public void delete(String publicId) {
+		try {
+			cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+		} catch (Exception e) {
+			throw new MediaStorageException("Failed to delete asset with public ID: " + publicId, e);
+		}
+	}
 }

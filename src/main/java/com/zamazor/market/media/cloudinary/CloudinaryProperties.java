@@ -8,7 +8,7 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties(prefix = "cloudinary")
 public record CloudinaryProperties(
-        @Valid @NotBlank String cloudName,
-        @Valid @NotBlank String apiKey,
-        @Valid @NotBlank String apiSecret
+		@Valid @NotBlank String cloudName,
+		@Valid @NotBlank String apiKey,
+		@Valid @NotBlank String apiSecret
 ) { }

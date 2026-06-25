@@ -8,6 +8,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface StoreRepository extends JpaRepository<Store, UUID> {
-    @Query(value = "SELECT * FROM stores LIMIT 1", nativeQuery = true)
-    Optional<Store> findOne();
+	@Query(value = "SELECT * FROM stores LIMIT 1", nativeQuery = true)
+	Optional<Store> findOne();
 }

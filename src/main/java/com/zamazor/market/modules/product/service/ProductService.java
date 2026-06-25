@@ -38,9 +38,9 @@ public class ProductService {
 	private final MediaStoragePort mediaStorage;
 
 	@Transactional
-	public ProductDto create(CreateProductRequest request, @NonNull MultipartFile  image) throws IOException {
+	public ProductDto create(CreateProductRequest request, @NonNull MultipartFile image) throws IOException {
 		var product = productMapper.toEntity(request);
-		var category =  categoryRepository.findById(request.categoryId())
+		var category = categoryRepository.findById(request.categoryId())
 				.orElseThrow(() -> new CategoryNotFoundException("Category with id: " + request.categoryId() + " not found"));
 		var store = storeRepository.findOne()
 				.orElseThrow(() -> new IllegalStateException("The single store instance is missing from the database!"));
@@ -112,7 +112,7 @@ public class ProductService {
 	}
 
 	public void delete(UUID id) {
-		var product  = productRepository.findById(id)
+		var product = productRepository.findById(id)
 				.orElseThrow(() -> new ProductNotFoundException("Product with id: " + id + " not found"));
 
 		mediaStorage.delete(product.getImagePublicId());

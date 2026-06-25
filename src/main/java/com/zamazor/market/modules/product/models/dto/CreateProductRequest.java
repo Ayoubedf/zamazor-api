@@ -10,8 +10,8 @@ import java.util.UUID;
 
 public record CreateProductRequest(
 		@NotBlank @Size(min = 2, max = 200) String name,
-    @NotBlank @Size(max = 2000) String description,
-    @NotNull @Positive BigDecimal price,
+		@NotBlank @Size(max = 2000) String description,
+		@NotNull @Positive BigDecimal price,
 		@NotNull @Positive Integer stockQuantity,
-    @NotNull UUID categoryId
+		@NotNull UUID categoryId
 ) { }

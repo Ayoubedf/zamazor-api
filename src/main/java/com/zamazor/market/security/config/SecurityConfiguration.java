@@ -27,44 +27,44 @@ import java.util.List;
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfiguration {
-    private final AuthenticationProvider authenticationProvider;
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final CustomLogoutSuccessHandler logoutSuccessHandler;
-    private final ApplicationProperties applicationProperties;
+	private final AuthenticationProvider authenticationProvider;
+	private final JwtAuthenticationFilter jwtAuthenticationFilter;
+	private final CustomLogoutSuccessHandler logoutSuccessHandler;
+	private final ApplicationProperties applicationProperties;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) {
-        return http
-                .csrf(AbstractHttpConfigurer::disable)
-                .cors(Customizer.withDefaults())
-                .authorizeHttpRequests(auth ->
-                        auth.requestMatchers("/auth/**").permitAll()
-                                .requestMatchers("/auth/me").authenticated()
-                                .anyRequest().authenticated())
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
-                .authenticationProvider(authenticationProvider)
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .logout(logout -> logout
-                    .logoutUrl("/auth/logout")
-                    .invalidateHttpSession(true)
-                    .clearAuthentication(true)
-                    .deleteCookies(CookieUtility.REFRESH_TOKEN_COOKIE_NAME)
-                    .logoutSuccessHandler(logoutSuccessHandler)
-                )
-                .build();
-    }
+	@Bean
+	public SecurityFilterChain securityFilterChain(HttpSecurity http) {
+		return http
+				.csrf(AbstractHttpConfigurer::disable)
+				.cors(Customizer.withDefaults())
+				.authorizeHttpRequests(auth ->
+						auth.requestMatchers("/auth/**").permitAll()
+								.requestMatchers("/auth/me").authenticated()
+								.anyRequest().authenticated())
+				.sessionManagement(session -> session
+								.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+				)
+				.authenticationProvider(authenticationProvider)
+				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+				.logout(logout -> logout
+								.logoutUrl("/auth/logout")
+								.invalidateHttpSession(true)
+								.clearAuthentication(true)
+								.deleteCookies(CookieUtility.REFRESH_TOKEN_COOKIE_NAME)
+								.logoutSuccessHandler(logoutSuccessHandler)
+				)
+				.build();
+	}
 
-    @Bean
-    CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-	    configuration.setAllowedOrigins(List.of(applicationProperties.frontendUrl()));
-	    configuration.setAllowCredentials(true);
-	    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-	    configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
-	    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-	    source.registerCorsConfiguration("/**", configuration);
-	    return source;
-    }
+	@Bean
+	CorsConfigurationSource corsConfigurationSource() {
+		CorsConfiguration configuration = new CorsConfiguration();
+		configuration.setAllowedOrigins(List.of(applicationProperties.frontendUrl()));
+		configuration.setAllowCredentials(true);
+		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+		configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/**", configuration);
+		return source;
+	}
 }

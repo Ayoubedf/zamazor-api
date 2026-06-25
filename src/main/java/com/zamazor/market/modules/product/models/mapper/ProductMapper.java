@@ -12,7 +12,7 @@ import org.mapstruct.MappingTarget;
 public interface ProductMapper {
 	ProductDto toDto(Product product);
 
-	@Mapping(target = "id",  ignore = true)
+	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "imageUrl", ignore = true)
 	@Mapping(target = "imagePublicId", ignore = true)
 	@Mapping(target = "reservedQuantity", ignore = true)

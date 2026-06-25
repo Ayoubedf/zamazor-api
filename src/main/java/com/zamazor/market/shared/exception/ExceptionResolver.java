@@ -65,7 +65,8 @@ public class ExceptionResolver extends ResponseEntityExceptionHandler {
 			@NonNull MethodArgumentNotValidException ex,
 			@NonNull HttpHeaders headers,
 			@NonNull HttpStatusCode status,
-			@NonNull WebRequest request) {
+			@NonNull WebRequest request
+	) {
 
 		Map<String, List<String>> fieldErrors = ex.getBindingResult()
 				.getFieldErrors()
