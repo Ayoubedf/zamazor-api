@@ -1,6 +1,6 @@
-package com.zamazor.market.security.handler;
+package com.zamazor.market.shared.exception;
 
-import com.zamazor.market.infrastructure.media.exception.MediaStorageException;
+import com.zamazor.market.media.exception.MediaStorageException;
 import com.zamazor.market.modules.auth.exception.EmailAlreadyExistsException;
 import com.zamazor.market.modules.auth.exception.UnauthorizedException;
 import com.zamazor.market.modules.catalog.exception.CartNotFoundException;

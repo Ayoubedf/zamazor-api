@@ -53,13 +53,16 @@ public class Product {
 	@JoinColumn(name = "category_id",  nullable = false)
 	private Category category;
 
+	@Builder.Default
 	@OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
 	private List<OrderItem> orderItems = new ArrayList<>();
 
+	@Builder.Default
 	@OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
 	private List<CartItem> cartItems = new ArrayList<>();
 
 	@Version
+	@Builder.Default
 	@Column(name = "version", nullable = false)
 	private Long version = 0L;
 

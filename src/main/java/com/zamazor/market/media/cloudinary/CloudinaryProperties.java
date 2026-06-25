@@ -1,4 +1,4 @@
-package com.zamazor.market.infrastructure.media.cloudinary;
+package com.zamazor.market.media.cloudinary;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;

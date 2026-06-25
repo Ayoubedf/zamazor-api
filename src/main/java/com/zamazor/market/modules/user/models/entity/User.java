@@ -59,9 +59,10 @@ public class User implements UserDetails {
 		return email;
 	}
 
-	@OneToOne(mappedBy = "user")
+	@OneToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "cart_id")
 	private Cart cart;
 
-	@OneToMany(mappedBy = "user", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+	@OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
 	private List<Order> orders;
 }

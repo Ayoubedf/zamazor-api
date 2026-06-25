@@ -1,6 +1,6 @@
 package com.zamazor.market.modules.catalog.service;
 
-import com.zamazor.market.common.api.PageResponse;
+import com.zamazor.market.shared.api.PageResponse;
 import com.zamazor.market.modules.catalog.exception.*;
 import com.zamazor.market.modules.catalog.models.dto.CheckoutRequest;
 import com.zamazor.market.modules.catalog.models.dto.OrderDto;

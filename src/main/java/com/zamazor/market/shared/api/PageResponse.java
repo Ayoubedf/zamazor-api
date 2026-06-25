@@ -1,4 +1,4 @@
-package com.zamazor.market.common.api;
+package com.zamazor.market.shared.api;
 
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;

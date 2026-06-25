@@ -13,5 +13,7 @@ public interface UserMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "password", ignore = true)
     @Mapping(target = "isAdmin", ignore = true)
+    @Mapping(target = "cart", ignore = true)
+    @Mapping(target = "orders", ignore = true)
     User toEntity(RegisterRequest request);
 }

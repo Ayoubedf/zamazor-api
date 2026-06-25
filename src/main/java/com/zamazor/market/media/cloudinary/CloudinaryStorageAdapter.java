@@ -1,10 +1,10 @@
-package com.zamazor.market.infrastructure.media.cloudinary;
+package com.zamazor.market.media.cloudinary;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
-import com.zamazor.market.domain.media.ports.MediaStoragePort;
-import com.zamazor.market.domain.media.model.StoredMediaMetadata;
-import com.zamazor.market.infrastructure.media.exception.MediaStorageException;
+import com.zamazor.market.media.ports.MediaStoragePort;
+import com.zamazor.market.media.model.StoredMediaMetadata;
+import com.zamazor.market.media.exception.MediaStorageException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -17,7 +17,7 @@ public class CloudinaryStorageAdapter implements MediaStoragePort {
     private final Cloudinary cloudinary;
 
     @Override
-    public StoredMediaMetadata uploadImage(InputStream inputStream, String fileName, String folderPath) {
+    public StoredMediaMetadata upload(InputStream inputStream, String fileName, String folderPath) {
         try {
             byte[] fileBytes = inputStream.readAllBytes();
 
@@ -40,7 +40,7 @@ public class CloudinaryStorageAdapter implements MediaStoragePort {
     }
 
     @Override
-    public void deleteAsset(String publicId) {
+    public void delete(String publicId) {
         try {
             cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
         } catch (Exception e) {
