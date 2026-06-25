@@ -37,6 +37,9 @@ public class Product {
 	@Column(name = "image_url", columnDefinition = "TEXT", nullable = false)
 	private String imageUrl;
 
+	@Column(name = "image_public_id", nullable = false)
+	private String imagePublicId;
+
 	@Builder.Default
 	@Column(name = "stock_quantity", nullable = false)
 	private Integer stockQuantity = 0;
@@ -49,7 +52,7 @@ public class Product {
 	@JoinColumn(name = "store_id",  nullable = false)
 	private Store store;
 
-	@ManyToOne(fetch = FetchType.LAZY,  optional = false)
+	@ManyToOne(fetch = FetchType.EAGER,  optional = false)
 	@JoinColumn(name = "category_id",  nullable = false)
 	private Category category;
 

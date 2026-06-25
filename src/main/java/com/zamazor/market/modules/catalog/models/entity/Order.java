@@ -6,6 +6,7 @@ import com.zamazor.market.modules.user.models.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 import org.springframework.data.annotation.CreatedDate;
 
 import java.math.BigDecimal;
@@ -34,6 +35,7 @@ public class Order {
 	private User user;
 
 	@OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+	@BatchSize(size = 50)
 	private List<OrderItem> items = new ArrayList<>();
 
 	@CreatedDate

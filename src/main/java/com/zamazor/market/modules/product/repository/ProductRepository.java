@@ -12,12 +12,6 @@ import java.util.UUID;
 
 public interface ProductRepository extends JpaRepository<Product, UUID>, JpaSpecificationExecutor<Product> {
 	@Query(
-			value = "SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.store",
-			countQuery = "SELECT count(p) FROM Product p"
-	)
-	Page<Product> findAllWithAssociations(Pageable pageable);
-
-	@Query(
 			value = "SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.store WHERE p.category.id = :categoryId",
 			countQuery = "SELECT count(p) FROM Product p WHERE p.category.id = :categoryId"
 	)

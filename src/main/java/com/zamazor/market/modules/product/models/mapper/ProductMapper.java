@@ -10,27 +10,29 @@ import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface ProductMapper {
-    ProductDto toDto(Product product);
+	ProductDto toDto(Product product);
 
-    @Mapping(target = "id",  ignore = true)
-    @Mapping(target = "imageUrl", ignore = true)
-    @Mapping(target = "reservedQuantity", ignore = true)
-    @Mapping(target = "store", ignore = true)
-    @Mapping(target = "category", ignore = true)
-    @Mapping(target = "orderItems", ignore = true)
-    @Mapping(target = "cartItems", ignore = true)
-    @Mapping(target = "version", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    Product toEntity(CreateProductRequest request);
+	@Mapping(target = "id",  ignore = true)
+	@Mapping(target = "imageUrl", ignore = true)
+	@Mapping(target = "imagePublicId", ignore = true)
+	@Mapping(target = "reservedQuantity", ignore = true)
+	@Mapping(target = "store", ignore = true)
+	@Mapping(target = "category", ignore = true)
+	@Mapping(target = "orderItems", ignore = true)
+	@Mapping(target = "cartItems", ignore = true)
+	@Mapping(target = "version", ignore = true)
+	@Mapping(target = "createdAt", ignore = true)
+	Product toEntity(CreateProductRequest request);
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "imageUrl", ignore = true)
-    @Mapping(target = "category", ignore = true)
-    @Mapping(target = "reservedQuantity", ignore = true)
-    @Mapping(target = "store", ignore = true)
-    @Mapping(target = "orderItems", ignore = true)
-    @Mapping(target = "cartItems", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "version", ignore = true)
-    void update(UpdateProductRequest request, @MappingTarget Product product);
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "imageUrl", ignore = true)
+	@Mapping(target = "imagePublicId", ignore = true)
+	@Mapping(target = "category", ignore = true)
+	@Mapping(target = "reservedQuantity", ignore = true)
+	@Mapping(target = "store", ignore = true)
+	@Mapping(target = "orderItems", ignore = true)
+	@Mapping(target = "cartItems", ignore = true)
+	@Mapping(target = "createdAt", ignore = true)
+	@Mapping(target = "version", ignore = true)
+	void update(UpdateProductRequest request, @MappingTarget Product product);
 }

@@ -48,15 +48,15 @@ public class ProductService {
 		product.setCategory(category);
 		product.setStore(store);
 		StoredMediaMetadata metadata = mediaStorage.upload(image.getInputStream(), image.getOriginalFilename(), "products");
-		String imageUrl = metadata.secureUrl();
-		product.setImageUrl(imageUrl);
+		product.setImageUrl(metadata.secureUrl());
+		product.setImagePublicId(metadata.publicId());
 
 		return productMapper.toDto(productRepository.save(product));
 	}
 
 	public PageResponse<ProductDto> getAll(Pageable pageable) {
 		Page<ProductDto> productPage = productRepository
-				.findAllWithAssociations(pageable).map(productMapper::toDto);
+				.findAll(pageable).map(productMapper::toDto);
 		return new PageResponse<>(productPage);
 	}
 
@@ -105,15 +105,17 @@ public class ProductService {
 		if (image != null && image.getSize() > 0) {
 			StoredMediaMetadata metadata = mediaStorage.upload(image.getInputStream(), image.getOriginalFilename(), "products");
 			product.setImageUrl(metadata.secureUrl());
+			product.setImagePublicId(metadata.publicId());
 		}
 
 		return productMapper.toDto(product);
 	}
 
 	public void delete(UUID id) {
-		if (!productRepository.existsById(id)) {
-			throw new ProductNotFoundException("Product with id: " + id + " not found");
-		}
+		var product  = productRepository.findById(id)
+				.orElseThrow(() -> new ProductNotFoundException("Product with id: " + id + " not found"));
+
+		mediaStorage.delete(product.getImagePublicId());
 		productRepository.deleteById(id);
 	}
 }
