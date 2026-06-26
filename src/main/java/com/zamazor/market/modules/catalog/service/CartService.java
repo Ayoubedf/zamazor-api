@@ -9,6 +9,7 @@ import com.zamazor.market.modules.catalog.repository.CartRepository;
 import com.zamazor.market.modules.product.exception.ProductNotFoundException;
 import com.zamazor.market.modules.product.repository.ProductRepository;
 import com.zamazor.market.modules.user.models.entity.User;
+import com.zamazor.market.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,29 +23,31 @@ public class CartService {
 	private final CartRepository cartRepository;
 	private final ProductRepository productRepository;
 	private final CartMapper cartMapper;
+	private final UserRepository userRepository;
 
 	public CartDto getCartByUserId(UUID userId) {
-		var cart = cartRepository.findByUserId(userId)
+		return cartRepository.findByUserId(userId)
+				.map(cartMapper::toDto)
 				.orElseThrow(() -> new CartNotFoundException("Cart not found for user: " + userId));
-		return cartMapper.toDto(cart);
 	}
 
 	@Transactional
 	public CartDto addItemToCart(User user, AddToCartRequest request) {
-		var cart = cartRepository.findByUserId(user.getId())
-				.orElseGet(() -> {
-					Cart newCart = new Cart();
-					newCart.setUser(user);
-					return cartRepository.save(newCart);
-				});
+		var cart = cartRepository.findByUserId(user.getId()).orElseGet(() -> {
+			var newCart = new Cart();
+			newCart = cartRepository.saveAndFlush(newCart);
+			user.setCart(newCart);
+			newCart.setUser(user);
+
+			userRepository.saveAndFlush(user);
+			return newCart;
+		});
+
 		var product = productRepository.findById(request.productId())
 				.orElseThrow(() -> new ProductNotFoundException("Product not found"));
 
 		cart.addProduct(product, request.quantity());
-
-		var savedCart = cartRepository.saveAndFlush(cart);
-
-		return cartMapper.toDto(savedCart);
+		return cartMapper.toDto(cartRepository.saveAndFlush(cart));
 	}
 
 	@Transactional
@@ -60,11 +63,11 @@ public class CartService {
 	}
 
 	@Transactional
-	public CartDto removeItem(UUID userId, UUID itemId) {
+	public CartDto removeItem(UUID userId, UUID productId) {
 		Cart cart = cartRepository.findByUserId(userId)
 				.orElseThrow(() -> new CartNotFoundException("Cart not found for user: " + userId));
 
-		cart.removeItem(itemId);
+		cart.removeItem(productId);
 
 		return cartMapper.toDto(cartRepository.save(cart));
 	}

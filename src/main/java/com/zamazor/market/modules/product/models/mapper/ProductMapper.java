@@ -8,7 +8,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {CategoryMapper.class})
 public interface ProductMapper {
 	ProductDto toDto(Product product);
 
@@ -32,7 +32,7 @@ public interface ProductMapper {
 	@Mapping(target = "store", ignore = true)
 	@Mapping(target = "orderItems", ignore = true)
 	@Mapping(target = "cartItems", ignore = true)
-	@Mapping(target = "createdAt", ignore = true)
 	@Mapping(target = "version", ignore = true)
+	@Mapping(target = "createdAt", ignore = true)
 	void update(UpdateProductRequest request, @MappingTarget Product product);
 }

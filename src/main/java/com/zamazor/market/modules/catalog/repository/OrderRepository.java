@@ -13,10 +13,12 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface OrderRepository extends JpaRepository<Order, UUID>, JpaSpecificationExecutor<Order> {
+	@EntityGraph(attributePaths = {"items", "items.product", "items.product.category"})
 	@NonNull Page<Order> findAll(@NonNull Specification<Order> specification, @NonNull Pageable pageable);
 
+	@EntityGraph(attributePaths = {"items", "items.product", "items.product.category"})
 	Page<Order> findByUserId(UUID userId, Pageable pageable);
 
-	@EntityGraph(attributePaths = {"items"})
+	@EntityGraph(attributePaths = {"items", "items.product", "items.product.category"})
 	@NonNull Optional<Order> findById(@NonNull UUID id);
 }

@@ -7,6 +7,7 @@ import com.zamazor.market.modules.user.models.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -25,7 +26,8 @@ public class Cart {
 	@OneToOne(mappedBy = "cart")
 	private User user;
 
-	@OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
+	@OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+	@BatchSize(size = 50)
 	private List<CartItem> items = new ArrayList<>();
 
 	public void addProduct(Product product, int quantity) {
@@ -57,8 +59,8 @@ public class Cart {
 		existingItem.setQuantity(quantity);
 	}
 
-	public void removeItem(UUID itemId) {
-		this.items.removeIf(item -> item.getId().equals(itemId));
+	public void removeItem(UUID productId) {
+		this.items.removeIf(item -> item.getProduct().getId().equals(productId));
 	}
 
 	public void clear() {

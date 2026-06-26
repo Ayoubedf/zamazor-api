@@ -9,9 +9,9 @@ import java.util.UUID;
 
 public record OrderDto(
 		UUID id,
-		UUID userId,
 		OrderStatus status,
 		BigDecimal total,
 		List<OrderItemDto> items,
 		LocalDateTime createdAt
-) {}
+) {
+}

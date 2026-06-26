@@ -54,7 +54,7 @@ public class OrderController {
 
 	@PostMapping("/checkout")
 	public ResponseEntity<OrderDto> checkout(@AuthenticationPrincipal User user, @Valid @RequestBody CheckoutRequest request) {
-		return ResponseEntity.ok(orderService.checkout(user.getId(), request));
+		return ResponseEntity.ok(orderService.checkout(user, request));
 	}
 
 	@PostMapping("/{orderId}/cancel")

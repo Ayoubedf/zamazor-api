@@ -29,7 +29,7 @@ public class CartController {
 		return ResponseEntity.ok(cartService.addItemToCart(user, request));
 	}
 
-	@PutMapping("/items/{productId}")
+	@PatchMapping("/items/{productId}")
 	public ResponseEntity<CartDto> updateItemQuantity(
 			@AuthenticationPrincipal User user,
 			@PathVariable UUID productId,
@@ -38,9 +38,9 @@ public class CartController {
 		return ResponseEntity.ok(cartService.updateItemQuantity(user.getId(), productId, request.quantity()));
 	}
 
-	@DeleteMapping("/items/{itemId}")
-	public ResponseEntity<CartDto> removeItemFromCart(@AuthenticationPrincipal User user, @PathVariable UUID itemId) {
-		return ResponseEntity.ok(cartService.removeItem(user.getId(), itemId));
+	@DeleteMapping("/items/{productId}")
+	public ResponseEntity<CartDto> removeItemFromCart(@AuthenticationPrincipal User user, @PathVariable UUID productId) {
+		return ResponseEntity.ok(cartService.removeItem(user.getId(), productId));
 	}
 
 	@DeleteMapping

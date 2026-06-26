@@ -52,7 +52,7 @@ public class Product {
 	@JoinColumn(name = "store_id", nullable = false)
 	private Store store;
 
-	@ManyToOne(fetch = FetchType.EAGER, optional = false)
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "category_id", nullable = false)
 	private Category category;
 
