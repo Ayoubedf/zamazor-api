@@ -11,9 +11,11 @@ import org.springframework.stereotype.Component;
 public class CustomLogoutSuccessHandler implements LogoutSuccessHandler {
 
 	@Override
-	public void onLogoutSuccess(@NonNull HttpServletRequest request,
-	                            HttpServletResponse response,
-	                            Authentication authentication) {
+	public void onLogoutSuccess(
+			@NonNull HttpServletRequest request,
+			HttpServletResponse response,
+			Authentication authentication
+	) {
 		response.setStatus(HttpServletResponse.SC_OK);
 	}
 }

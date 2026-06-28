@@ -53,7 +53,7 @@ public class AuthenticationController {
 
 	@GetMapping("/me")
 	public ResponseEntity<UserDto> me() {
-        return ResponseEntity.ok(authenticationService.getCurrentUser());
-    }
+		return ResponseEntity.ok(authenticationService.getCurrentUser());
+	}
 
 }

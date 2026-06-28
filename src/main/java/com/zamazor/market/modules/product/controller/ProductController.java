@@ -1,6 +1,6 @@
 package com.zamazor.market.modules.product.controller;
 
-import com.zamazor.market.common.api.PageResponse;
+import com.zamazor.market.shared.api.PageResponse;
 import com.zamazor.market.modules.product.models.dto.CreateProductRequest;
 import com.zamazor.market.modules.product.models.dto.ProductDto;
 import com.zamazor.market.modules.product.models.dto.UpdateProductRequest;

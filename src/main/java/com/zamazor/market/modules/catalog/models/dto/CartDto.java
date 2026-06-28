@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public record CartDto(
 		UUID id,
-		UUID userId,
 		BigDecimal total,
 		List<CartItemDto> items
-) {}
+) {
+}

@@ -1,6 +1,6 @@
 package com.zamazor.market.modules.catalog.controller;
 
-import com.zamazor.market.common.api.PageResponse;
+import com.zamazor.market.shared.api.PageResponse;
 import com.zamazor.market.modules.catalog.models.dto.CheckoutRequest;
 import com.zamazor.market.modules.catalog.models.dto.OrderDto;
 import com.zamazor.market.modules.catalog.models.entity.OrderStatus;
@@ -54,7 +54,7 @@ public class OrderController {
 
 	@PostMapping("/checkout")
 	public ResponseEntity<OrderDto> checkout(@AuthenticationPrincipal User user, @Valid @RequestBody CheckoutRequest request) {
-		return ResponseEntity.ok(orderService.checkout(user.getId(), request));
+		return ResponseEntity.ok(orderService.checkout(user, request));
 	}
 
 	@PostMapping("/{orderId}/cancel")

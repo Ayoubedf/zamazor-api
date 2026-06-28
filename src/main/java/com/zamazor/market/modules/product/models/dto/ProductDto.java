@@ -7,12 +7,12 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 public record ProductDto(
-    @NotNull UUID id,
-    @NotNull String name,
-    @Nullable String description,
-    @Nullable String imageUrl,
-    @NotNull BigDecimal price,
+		@NotNull UUID id,
+		@NotNull String name,
+		@Nullable String description,
+		@Nullable String imageUrl,
+		@NotNull BigDecimal price,
 		@NotNull Integer stockQuantity,
 		@NotNull Integer reservedQuantity,
-    @NotNull CategoryDto category
+		@NotNull CategoryDto category
 ) { }

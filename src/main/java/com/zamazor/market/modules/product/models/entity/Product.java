@@ -37,6 +37,9 @@ public class Product {
 	@Column(name = "image_url", columnDefinition = "TEXT", nullable = false)
 	private String imageUrl;
 
+	@Column(name = "image_public_id", nullable = false)
+	private String imagePublicId;
+
 	@Builder.Default
 	@Column(name = "stock_quantity", nullable = false)
 	private Integer stockQuantity = 0;
@@ -46,20 +49,23 @@ public class Product {
 	private Integer reservedQuantity = 0;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "store_id",  nullable = false)
+	@JoinColumn(name = "store_id", nullable = false)
 	private Store store;
 
-	@ManyToOne(fetch = FetchType.LAZY,  optional = false)
-	@JoinColumn(name = "category_id",  nullable = false)
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "category_id", nullable = false)
 	private Category category;
 
+	@Builder.Default
 	@OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
 	private List<OrderItem> orderItems = new ArrayList<>();
 
+	@Builder.Default
 	@OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
 	private List<CartItem> cartItems = new ArrayList<>();
 
 	@Version
+	@Builder.Default
 	@Column(name = "version", nullable = false)
 	private Long version = 0L;
 

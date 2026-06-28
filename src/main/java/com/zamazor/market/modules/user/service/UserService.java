@@ -12,12 +12,12 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-    private final UserRepository userRepository;
-    private final UserMapper userMapper;
+	private final UserRepository userRepository;
+	private final UserMapper userMapper;
 
-    public UserDto getUser(UUID id) {
-        return userRepository.findById(id).map(userMapper::toDto)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-    }
+	public UserDto getUser(UUID id) {
+		return userRepository.findById(id).map(userMapper::toDto)
+				.orElseThrow(() -> new UsernameNotFoundException("User not found"));
+	}
 
 }

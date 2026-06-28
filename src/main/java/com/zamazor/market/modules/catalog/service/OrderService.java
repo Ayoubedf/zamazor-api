@@ -1,6 +1,8 @@
 package com.zamazor.market.modules.catalog.service;
 
-import com.zamazor.market.common.api.PageResponse;
+import com.zamazor.market.modules.catalog.models.dto.AddressRequest;
+import com.zamazor.market.modules.catalog.models.entity.AddressComponent;
+import com.zamazor.market.shared.api.PageResponse;
 import com.zamazor.market.modules.catalog.exception.*;
 import com.zamazor.market.modules.catalog.models.dto.CheckoutRequest;
 import com.zamazor.market.modules.catalog.models.dto.OrderDto;
@@ -12,7 +14,6 @@ import com.zamazor.market.modules.catalog.repository.OrderRepository;
 import com.zamazor.market.modules.catalog.specification.OrderSpecifications;
 import com.zamazor.market.modules.user.models.entity.User;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -28,6 +29,7 @@ public class OrderService {
 	private final CartRepository cartRepository;
 	private final OrderRepository orderRepository;
 	private final OrderMapper orderMapper;
+	private final AddressService addressService;
 
 	public PageResponse<OrderDto> getAll(String userFullName, OrderStatus status, Pageable pageable) {
 		Specification<Order> spec = OrderSpecifications.createSpec(userFullName, status);
@@ -47,8 +49,8 @@ public class OrderService {
 	}
 
 	@Transactional
-	public OrderDto checkout(UUID userId, CheckoutRequest request) {
-		var cart = cartRepository.findByUserId(userId)
+	public OrderDto checkout(User user, CheckoutRequest request) {
+		var cart = cartRepository.findByUserId(user.getId())
 				.orElseThrow(() -> new CartNotFoundException("Cart empty or missing"));
 
 		if (cart.getItems().isEmpty()) {
@@ -56,8 +58,20 @@ public class OrderService {
 		}
 
 		var order = Order.createFromCart(cart);
-		var savedOrder = orderRepository.saveAndFlush(order);
+		var snapshot = new AddressComponent(
+				request.country(),
+				request.city(),
+				request.street(),
+				request.phone()
+		);
+		order.setShippingAddressSnapshot(snapshot);
 
+		if (request.isDefault()) {
+			var addressRequest = new AddressRequest(request.country(), request.city(), request.street(), request.phone());
+			addressService.createOrUpdate(user, addressRequest);
+		}
+
+		var savedOrder = orderRepository.saveAndFlush(order);
 		cart.clear();
 		cartRepository.saveAndFlush(cart);
 
@@ -65,7 +79,7 @@ public class OrderService {
 	}
 
 	@Transactional
-	public OrderDto cancelOrder(UUID orderId, @NonNull User user) {
+	public OrderDto cancelOrder(UUID orderId, User user) {
 		var order = orderRepository.findById(orderId)
 				.orElseThrow(() -> new OrderNotFoundException("Order not found"));
 

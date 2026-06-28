@@ -6,6 +6,7 @@ import com.zamazor.market.modules.user.models.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 import org.springframework.data.annotation.CreatedDate;
 
 import java.math.BigDecimal;
@@ -24,6 +25,7 @@ public class Order {
 	private UUID id;
 
 	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
 	private OrderStatus status;
 
 	@Column(nullable = false)
@@ -33,8 +35,18 @@ public class Order {
 	@JoinColumn(name = "user_id", nullable = false)
 	private User user;
 
-	@OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+	@OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+	@BatchSize(size = 50)
 	private List<OrderItem> items = new ArrayList<>();
+
+	@Embedded
+	@AttributeOverrides({
+			@AttributeOverride(name = "country", column = @Column(name = "shipping_country")),
+			@AttributeOverride(name = "city", column = @Column(name = "shipping_city")),
+			@AttributeOverride(name = "street", column = @Column(name = "shipping_street")),
+			@AttributeOverride(name = "phone", column = @Column(name = "recipient_phone"))
+	})
+	private AddressComponent shippingAddressSnapshot;
 
 	@CreatedDate
 	@Column(name = "created_at", nullable = false, updatable = false, insertable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")

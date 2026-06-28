@@ -1,5 +1,6 @@
 package com.zamazor.market.modules.user.models.entity;
 
+import com.zamazor.market.modules.catalog.models.entity.Address;
 import com.zamazor.market.modules.catalog.models.entity.Cart;
 import com.zamazor.market.modules.catalog.models.entity.Order;
 import jakarta.persistence.*;
@@ -8,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -59,9 +61,16 @@ public class User implements UserDetails {
 		return email;
 	}
 
-	@OneToOne(mappedBy = "user")
+	@Nullable
+	@OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	@JoinColumn(name = "address_id")
+	private Address address;
+
+	@Nullable
+	@OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	@JoinColumn(name = "cart_id")
 	private Cart cart;
 
-	@OneToMany(mappedBy = "user", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+	@OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
 	private List<Order> orders;
 }

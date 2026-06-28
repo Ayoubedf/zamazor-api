@@ -15,11 +15,11 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 public class UserController {
-    private final UserService userService;
+	private final UserService userService;
 
-    @GetMapping("/{id}")
-    public ResponseEntity<UserDto> getUser(@PathVariable UUID id) {
-        return ResponseEntity.ok(userService.getUser(id));
-    }
+	@GetMapping("/{id}")
+	public ResponseEntity<UserDto> getUser(@PathVariable UUID id) {
+		return ResponseEntity.ok(userService.getUser(id));
+	}
 
 }

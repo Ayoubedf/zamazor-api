@@ -1,12 +1,9 @@
-package com.zamazor.market.security.handler;
+package com.zamazor.market.shared.exception;
 
-import com.zamazor.market.infrastructure.media.exception.MediaStorageException;
+import com.zamazor.market.media.exception.MediaStorageException;
 import com.zamazor.market.modules.auth.exception.EmailAlreadyExistsException;
 import com.zamazor.market.modules.auth.exception.UnauthorizedException;
-import com.zamazor.market.modules.catalog.exception.CartNotFoundException;
-import com.zamazor.market.modules.catalog.exception.EmptyCartException;
-import com.zamazor.market.modules.catalog.exception.OrderNotFoundException;
-import com.zamazor.market.modules.catalog.exception.OutOfStockException;
+import com.zamazor.market.modules.catalog.exception.*;
 import com.zamazor.market.modules.product.exception.CategoryNotFoundException;
 import com.zamazor.market.modules.product.exception.ProductNotFoundException;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -34,7 +31,7 @@ import java.util.stream.Collectors;
 @ControllerAdvice
 public class ExceptionResolver extends ResponseEntityExceptionHandler {
 	@ExceptionHandler(Exception.class)
-	public ProblemDetail handleSecurityException(Exception exception){
+	public ProblemDetail handleSecurityException(Exception exception) {
 		return switch (exception) {
 			case BadCredentialsException e -> createProblemDetail(401, e.getMessage(), "Invalid Credentials");
 			case AccountStatusException e -> createProblemDetail(403, e.getMessage(), "Account Locked");
@@ -45,11 +42,13 @@ public class ExceptionResolver extends ResponseEntityExceptionHandler {
 			case UnauthorizedException e -> createProblemDetail(401, e.getMessage(), "Authentication Required");
 			case ProductNotFoundException e -> createProblemDetail(404, e.getMessage(), "Product Not Found");
 			case CategoryNotFoundException e -> createProblemDetail(404, e.getMessage(), "Category Not Found");
-			case MediaStorageException e -> createProblemDetail(500, e.getMessage(), "Media storage service failed to process asset");
+			case MediaStorageException e ->
+					createProblemDetail(500, e.getMessage(), "Media storage service failed to process asset");
 			case CartNotFoundException e -> createProblemDetail(404, e.getMessage(), "Cart Not Found");
 			case OrderNotFoundException e -> createProblemDetail(404, e.getMessage(), "Order Not Found");
 			case EmptyCartException e -> createProblemDetail(400, e.getMessage(), "Cart is Empty");
 			case OutOfStockException e -> createProblemDetail(409, e.getMessage(), "Insufficient Product Stock");
+			case AddressNotFoundException e -> createProblemDetail(404, e.getMessage(), "Address Not Found");
 			default -> createProblemDetail(500, exception.getMessage(), "Unknown internal server error");
 		};
 	}
@@ -65,7 +64,8 @@ public class ExceptionResolver extends ResponseEntityExceptionHandler {
 			@NonNull MethodArgumentNotValidException ex,
 			@NonNull HttpHeaders headers,
 			@NonNull HttpStatusCode status,
-			@NonNull WebRequest request) {
+			@NonNull WebRequest request
+	) {
 
 		Map<String, List<String>> fieldErrors = ex.getBindingResult()
 				.getFieldErrors()
