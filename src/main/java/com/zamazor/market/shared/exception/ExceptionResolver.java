@@ -5,6 +5,8 @@ import com.zamazor.market.modules.auth.exception.EmailAlreadyExistsException;
 import com.zamazor.market.modules.auth.exception.UnauthorizedException;
 import com.zamazor.market.modules.catalog.exception.*;
 import com.zamazor.market.modules.product.exception.CategoryNotFoundException;
+import com.zamazor.market.modules.product.exception.OrderCancellationException;
+import com.zamazor.market.modules.product.exception.OrderRefundException;
 import com.zamazor.market.modules.product.exception.ProductNotFoundException;
 import com.zamazor.market.modules.product.models.dto.CategoryAlreadyExistsException;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -48,6 +50,8 @@ public class ExceptionResolver extends ResponseEntityExceptionHandler {
 					createProblemDetail(500, e.getMessage(), "Media storage service failed to process asset");
 			case CartNotFoundException e -> createProblemDetail(404, e.getMessage(), "Cart Not Found");
 			case OrderNotFoundException e -> createProblemDetail(404, e.getMessage(), "Order Not Found");
+			case OrderCancellationException e -> createProblemDetail(409, e.getMessage(), "Order Cancellation Failed");
+			case OrderRefundException e -> createProblemDetail(409, e.getMessage(), "Order Refund Failed");
 			case EmptyCartException e -> createProblemDetail(400, e.getMessage(), "Cart is Empty");
 			case OutOfStockException e -> createProblemDetail(409, e.getMessage(), "Insufficient Product Stock");
 			case AddressNotFoundException e -> createProblemDetail(404, e.getMessage(), "Address Not Found");

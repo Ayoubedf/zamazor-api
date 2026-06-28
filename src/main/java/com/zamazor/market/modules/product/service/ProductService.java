@@ -112,10 +112,6 @@ public class ProductService {
 	}
 
 	public void delete(UUID id) {
-		var product = productRepository.findById(id)
-				.orElseThrow(() -> new ProductNotFoundException("Product with id: " + id + " not found"));
-
-		mediaStorage.delete(product.getImagePublicId());
 		productRepository.deleteById(id);
 	}
 }

@@ -1,5 +1,6 @@
 package com.zamazor.market.modules.catalog.controller;
 
+import com.zamazor.market.modules.catalog.models.dto.UpdateStatusRequest;
 import com.zamazor.market.shared.api.PageResponse;
 import com.zamazor.market.modules.catalog.models.dto.CheckoutRequest;
 import com.zamazor.market.modules.catalog.models.dto.OrderDto;
@@ -60,5 +61,11 @@ public class OrderController {
 	@PostMapping("/{orderId}/cancel")
 	public ResponseEntity<OrderDto> cancelOrder(@PathVariable UUID orderId, @AuthenticationPrincipal User user) {
 		return ResponseEntity.ok(orderService.cancelOrder(orderId, user));
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
+	@PatchMapping("/{orderId}/status")
+	public ResponseEntity<OrderDto> changeStatus(@PathVariable UUID orderId, @Valid @RequestBody UpdateStatusRequest request) {
+		return ResponseEntity.ok(orderService.changeStatus(orderId, request.status()));
 	}
 }

@@ -13,6 +13,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Clock;
+
 @Configuration
 @RequiredArgsConstructor
 public class ApplicationConfiguration {
@@ -40,5 +42,10 @@ public class ApplicationConfiguration {
 		authProvider.setPasswordEncoder(passwordEncoder());
 
 		return authProvider;
+	}
+
+	@Bean
+	public Clock clock() {
+		return Clock.systemDefaultZone();
 	}
 }

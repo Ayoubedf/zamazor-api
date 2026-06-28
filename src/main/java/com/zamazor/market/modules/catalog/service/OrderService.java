@@ -1,7 +1,9 @@
 package com.zamazor.market.modules.catalog.service;
 
 import com.zamazor.market.modules.catalog.models.dto.AddressRequest;
+import com.zamazor.market.modules.catalog.models.dto.StockRestoreDto;
 import com.zamazor.market.modules.catalog.models.entity.AddressComponent;
+import com.zamazor.market.modules.product.repository.ProductRepository;
 import com.zamazor.market.shared.api.PageResponse;
 import com.zamazor.market.modules.catalog.exception.*;
 import com.zamazor.market.modules.catalog.models.dto.CheckoutRequest;
@@ -20,6 +22,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Transactional(readOnly = true)
@@ -30,6 +35,8 @@ public class OrderService {
 	private final OrderRepository orderRepository;
 	private final OrderMapper orderMapper;
 	private final AddressService addressService;
+	private final ProductRepository productRepository;
+	private final Clock clock;
 
 	public PageResponse<OrderDto> getAll(String userFullName, OrderStatus status, Pageable pageable) {
 		Specification<Order> spec = OrderSpecifications.createSpec(userFullName, status);
@@ -79,6 +86,23 @@ public class OrderService {
 	}
 
 	@Transactional
+	public OrderDto changeStatus(UUID orderId, OrderStatus newStatus) {
+		var order = orderRepository.findById(orderId)
+				.orElseThrow(() -> new OrderNotFoundException("Order not found"));
+		LocalDateTime now = LocalDateTime.now(clock);
+
+		if (order.getStatus() == newStatus) return orderMapper.toDto(order);
+
+		switch (newStatus) {
+			case CANCELED -> handleCancellation(order, now);
+			case REFUNDED -> handleRefund(order, now);
+			default -> order.transitionTo(newStatus);
+		}
+
+		return orderMapper.toDto(orderRepository.save(order));
+	}
+
+	@Transactional
 	public OrderDto cancelOrder(UUID orderId, User user) {
 		var order = orderRepository.findById(orderId)
 				.orElseThrow(() -> new OrderNotFoundException("Order not found"));
@@ -87,8 +111,38 @@ public class OrderService {
 			throw new UnauthorizedOrderException("You do not have permission to cancel this order");
 		}
 
-		order.cancel();
+		if (order.getStatus() == OrderStatus.CANCELED) return orderMapper.toDto(order);
+
+		LocalDateTime now = LocalDateTime.now(clock);
+		handleCancellation(order, now);
 
 		return orderMapper.toDto(order);
+	}
+
+	private void handleCancellation(Order order, LocalDateTime now) {
+		List<StockRestoreDto> itemsToRestore = order.cancel(now);
+		if (!itemsToRestore.isEmpty()) {
+			restoreInventoryStock(itemsToRestore);
+		}
+	}
+
+	private void handleRefund(Order order, LocalDateTime now) {
+		if (order.getStatus() != OrderStatus.DELIVERED && order.getStatus() != OrderStatus.PAID) {
+			throw new IllegalStateException("Only paid or delivered orders can be refunded.");
+		}
+		List<StockRestoreDto> itemsToRestore = order.refund(now);
+		if (!itemsToRestore.isEmpty()) {
+			restoreInventoryStock(itemsToRestore);
+		}
+	}
+
+	private void restoreInventoryStock(List<StockRestoreDto> itemsToRestore) {
+		for (StockRestoreDto item : itemsToRestore) {
+			productRepository.findById(item.productId())
+					.ifPresent(product -> {
+						product.restoreStock(item.quantity());
+						productRepository.save(product);
+					});
+		}
 	}
 }
