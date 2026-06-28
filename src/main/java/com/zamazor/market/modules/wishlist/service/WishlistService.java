@@ -3,7 +3,6 @@ package com.zamazor.market.modules.wishlist.service;
 import com.zamazor.market.modules.product.repository.ProductRepository;
 import com.zamazor.market.modules.user.models.entity.User;
 import com.zamazor.market.modules.wishlist.models.dto.WishlistDto;
-import com.zamazor.market.modules.wishlist.models.entity.Wishlist;
 import com.zamazor.market.modules.wishlist.models.mapper.WishlistMapper;
 import com.zamazor.market.modules.wishlist.repository.WishlistRepository;
 import com.zamazor.market.shared.api.PageResponse;
@@ -31,9 +30,10 @@ public class WishlistService {
 	}
 
 	@Transactional
-	public WishlistDto addToWishlist(User user, UUID productId) {
+	public WishlistDto toggleToWishlist(User user, UUID productId) {
 		if (wishlistRepository.existsByUserIdAndProductId(user.getId(), productId)) {
-			throw new IllegalStateException("Product is already in the wishlist");
+			wishlistRepository.deleteByUserIdAndProductId(user.getId(), productId);
+			return null;
 		}
 
 		var product = productRepository.findById(productId)
@@ -41,14 +41,17 @@ public class WishlistService {
 
 		var wishlist = wishlistMapper.toEntity(user, product);
 
-		Wishlist saved = wishlistRepository.save(wishlist);
-		return wishlistMapper.toDto(saved);
+		return wishlistMapper.toDto(wishlistRepository.save(wishlist));
 	}
 
 	@Transactional
 	public void removeFromWishlist(UUID userId, UUID productId) {
-		Wishlist wishlist = wishlistRepository.findByUserIdAndProductId(userId, productId)
+		var wishlist = wishlistRepository.findByUserIdAndProductId(userId, productId)
 				.orElseThrow(() -> new EntityNotFoundException("Item not found in wishlist"));
 		wishlistRepository.delete(wishlist);
+	}
+
+	public void clearWishlist(UUID userId) {
+		wishlistRepository.deleteByUserId(userId);
 	}
 }

@@ -31,10 +31,12 @@ public class WishlistController {
 	}
 
 	@PostMapping("/{productId}")
-	public ResponseEntity<WishlistDto> addToWishlist(
+	public ResponseEntity<WishlistDto> toggleToWishlist(
 			@AuthenticationPrincipal User user,
 			@PathVariable UUID productId) {
-		WishlistDto item = wishlistService.addToWishlist(user, productId);
+		WishlistDto item = wishlistService.toggleToWishlist(user, productId);
+		if (item == null) return ResponseEntity.noContent().build();
+
 		return ResponseEntity.status(HttpStatus.CREATED).body(item);
 	}
 
@@ -43,6 +45,12 @@ public class WishlistController {
 			@AuthenticationPrincipal User user,
 			@PathVariable UUID productId) {
 		wishlistService.removeFromWishlist(user.getId(), productId);
+		return ResponseEntity.noContent().build();
+	}
+
+	@DeleteMapping
+	public ResponseEntity<Void> clearWishlist(@AuthenticationPrincipal User user) {
+		wishlistService.clearWishlist(user.getId());
 		return ResponseEntity.noContent().build();
 	}
 }
