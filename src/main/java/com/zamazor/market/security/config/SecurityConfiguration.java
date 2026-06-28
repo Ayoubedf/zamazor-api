@@ -7,6 +7,7 @@ import com.zamazor.market.security.handler.CustomLogoutSuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -40,18 +41,20 @@ public class SecurityConfiguration {
 				.authorizeHttpRequests(auth ->
 						auth.requestMatchers("/auth/**").permitAll()
 								.requestMatchers("/auth/me").authenticated()
+								.requestMatchers(HttpMethod.GET, "/products/**").permitAll()
+								.requestMatchers(HttpMethod.GET, "/categories/**").permitAll()
 								.anyRequest().authenticated())
 				.sessionManagement(session -> session
-								.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+						.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
 				)
 				.authenticationProvider(authenticationProvider)
 				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 				.logout(logout -> logout
-								.logoutUrl("/auth/logout")
-								.invalidateHttpSession(true)
-								.clearAuthentication(true)
-								.deleteCookies(CookieUtility.REFRESH_TOKEN_COOKIE_NAME)
-								.logoutSuccessHandler(logoutSuccessHandler)
+						.logoutUrl("/auth/logout")
+						.invalidateHttpSession(true)
+						.clearAuthentication(true)
+						.deleteCookies(CookieUtility.REFRESH_TOKEN_COOKIE_NAME)
+						.logoutSuccessHandler(logoutSuccessHandler)
 				)
 				.build();
 	}

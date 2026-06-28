@@ -6,6 +6,7 @@ import com.zamazor.market.modules.auth.exception.UnauthorizedException;
 import com.zamazor.market.modules.catalog.exception.*;
 import com.zamazor.market.modules.product.exception.CategoryNotFoundException;
 import com.zamazor.market.modules.product.exception.ProductNotFoundException;
+import com.zamazor.market.modules.product.models.dto.CategoryAlreadyExistsException;
 import io.jsonwebtoken.ExpiredJwtException;
 import org.jspecify.annotations.NonNull;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
@@ -42,6 +43,7 @@ public class ExceptionResolver extends ResponseEntityExceptionHandler {
 			case UnauthorizedException e -> createProblemDetail(401, e.getMessage(), "Authentication Required");
 			case ProductNotFoundException e -> createProblemDetail(404, e.getMessage(), "Product Not Found");
 			case CategoryNotFoundException e -> createProblemDetail(404, e.getMessage(), "Category Not Found");
+			case CategoryAlreadyExistsException e -> createProblemDetail(409, e.getMessage(), "Category Already Exists");
 			case MediaStorageException e ->
 					createProblemDetail(500, e.getMessage(), "Media storage service failed to process asset");
 			case CartNotFoundException e -> createProblemDetail(404, e.getMessage(), "Cart Not Found");
