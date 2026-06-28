@@ -73,9 +73,14 @@ public class Product {
 	@Column(name = "modified_at", nullable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
 	private LocalDateTime modifiedAt;
 
+	@PrePersist
+	public void prePersist() {
+		this.modifiedAt = LocalDateTime.now();
+	}
+
 	@PreUpdate
 	public void preUpdate() {
-		modifiedAt = LocalDateTime.now();
+		this.modifiedAt = LocalDateTime.now();
 	}
 
 	public void deductStock(int quantity) {
