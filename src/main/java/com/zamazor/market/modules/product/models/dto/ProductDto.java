@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotNull;
 import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record ProductDto(
@@ -14,5 +15,8 @@ public record ProductDto(
 		@NotNull BigDecimal price,
 		@NotNull Integer stockQuantity,
 		@NotNull Integer reservedQuantity,
-		@NotNull CategoryDto category
-) { }
+		@NotNull CategoryDto category,
+		@NotNull LocalDateTime createdAt,
+		@NotNull LocalDateTime modifiedAt
+) {
+}

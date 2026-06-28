@@ -5,6 +5,7 @@ import com.zamazor.market.modules.catalog.models.entity.CartItem;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -67,6 +68,15 @@ public class Product {
 	@CreatedDate
 	@Column(name = "created_at", nullable = false, updatable = false, insertable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
 	private LocalDateTime createdAt;
+
+	@LastModifiedDate
+	@Column(name = "modified_at", nullable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+	private LocalDateTime modifiedAt;
+
+	@PreUpdate
+	public void preUpdate() {
+		modifiedAt = LocalDateTime.now();
+	}
 
 	public void deductStock(int quantity) {
 		if (this.stockQuantity < quantity) {

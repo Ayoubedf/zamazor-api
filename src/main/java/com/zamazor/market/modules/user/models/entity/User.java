@@ -3,6 +3,7 @@ package com.zamazor.market.modules.user.models.entity;
 import com.zamazor.market.modules.catalog.models.entity.Address;
 import com.zamazor.market.modules.catalog.models.entity.Cart;
 import com.zamazor.market.modules.catalog.models.entity.Order;
+import com.zamazor.market.modules.wishlist.models.entity.Wishlist;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -73,4 +74,7 @@ public class User implements UserDetails {
 
 	@OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
 	private List<Order> orders;
+
+	@OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
+	private List<Wishlist> wishlists;
 }
