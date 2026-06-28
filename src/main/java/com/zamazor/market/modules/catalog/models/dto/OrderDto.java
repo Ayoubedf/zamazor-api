@@ -16,6 +16,7 @@ public record OrderDto(
 		String shippingCity,
 		String shippingStreet,
 		String phone,
+		UserMinDto user,
 		LocalDateTime createdAt
 ) {
 }

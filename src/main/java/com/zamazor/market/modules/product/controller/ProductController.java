@@ -46,12 +46,15 @@ public class ProductController {
 
 	@GetMapping
 	public ResponseEntity<PageResponse<ProductDto>> getAll(
-			@RequestParam(defaultValue = "0") Integer page,
-			@RequestParam(defaultValue = "10") Integer size
+			@RequestParam(required = false) String q,
+			@RequestParam(required = false) UUID categoryId,
+			@RequestParam(required = false) BigDecimal minPrice,
+			@RequestParam(required = false) BigDecimal maxPrice,
+			@PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
 	) {
-		Pageable pageable = PageRequest.of(page, size);
-		return ResponseEntity.ok(productService.getAll(pageable));
+		return ResponseEntity.ok(productService.search(q, categoryId, minPrice, maxPrice, pageable));
 	}
+
 
 	@GetMapping("/category/{categoryId}")
 	public ResponseEntity<PageResponse<ProductDto>> getByCategory(
@@ -65,7 +68,7 @@ public class ProductController {
 
 	@GetMapping("/search")
 	public ResponseEntity<PageResponse<ProductDto>> search(
-			@RequestParam String q,
+			@RequestParam(required = false) String q,
 			@RequestParam(required = false) UUID categoryId,
 			@RequestParam(required = false) BigDecimal minPrice,
 			@RequestParam(required = false) BigDecimal maxPrice,

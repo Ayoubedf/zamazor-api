@@ -40,8 +40,9 @@ public class OrderService {
 
 	public PageResponse<OrderDto> getAll(String userFullName, OrderStatus status, Pageable pageable) {
 		Specification<Order> spec = OrderSpecifications.createSpec(userFullName, status);
-		Page<OrderDto> orderPage = orderRepository.findAll(spec, pageable).map(orderMapper::toDto);
-		return new PageResponse<>(orderPage);
+
+		Page<Order> orderPage = orderRepository.findAll(spec, pageable);
+		return new PageResponse<>(orderPage.map(orderMapper::toDto));
 	}
 
 	public PageResponse<OrderDto> getByUserId(UUID userId, Pageable pageable) {

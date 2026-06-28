@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -29,10 +30,25 @@ public class OrderController {
 	public ResponseEntity<PageResponse<OrderDto>> getAllOrders(
 			@RequestParam(required = false) String userFullName,
 			@RequestParam(required = false) @Valid OrderStatus status,
-			@RequestParam(defaultValue = "0") Integer page,
-			@RequestParam(defaultValue = "10") Integer size
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "10") int size,
+			@RequestParam(defaultValue = "createdAt,desc") String[] sort
 	) {
-		Pageable pageable = PageRequest.of(page, size);
+		String sortProperty = sort[0];
+		Sort.Direction direction = Sort.Direction.DESC;
+
+		if (sort.length > 1) {
+			direction = Sort.Direction.fromString(sort[1]);
+		}
+
+		// Handle property mapping right away
+		if ("totalAmount".equals(sortProperty)) {
+			sortProperty = "total";
+		} else if ("userFullName".equals(sortProperty)) {
+			sortProperty = "user.fullName";
+		}
+
+		Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortProperty));
 		return ResponseEntity.ok(orderService.getAll(userFullName, status, pageable));
 	}
 
