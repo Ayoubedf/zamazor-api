@@ -35,6 +35,8 @@ public class WishlistController {
 			@AuthenticationPrincipal User user,
 			@PathVariable UUID productId) {
 		WishlistDto item = wishlistService.toggleToWishlist(user, productId);
+		if (item == null) return ResponseEntity.noContent().build();
+
 		return ResponseEntity.status(HttpStatus.CREATED).body(item);
 	}
 
