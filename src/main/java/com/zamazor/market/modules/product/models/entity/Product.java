@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -21,6 +22,7 @@ import java.util.UUID;
 @ToString(exclude = {"store", "category"})
 @Entity
 @Table(name = "products")
+@EntityListeners(AuditingEntityListener.class)
 public class Product {
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
@@ -66,16 +68,19 @@ public class Product {
 	private Long version = 0L;
 
 	@CreatedDate
-	@Column(name = "created_at", nullable = false, updatable = false, insertable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
 	private LocalDateTime createdAt;
 
 	@LastModifiedDate
-	@Column(name = "modified_at", nullable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
 	private LocalDateTime modifiedAt;
+
+	@PrePersist
+	public void prePersist() {
+		this.modifiedAt = LocalDateTime.now();
+	}
 
 	@PreUpdate
 	public void preUpdate() {
-		modifiedAt = LocalDateTime.now();
+		this.modifiedAt = LocalDateTime.now();
 	}
 
 	public void deductStock(int quantity) {
