@@ -12,6 +12,10 @@ public record OrderDto(
 		OrderStatus status,
 		BigDecimal total,
 		List<OrderItemDto> items,
+		String shippingCountry,
+		String shippingCity,
+		String shippingStreet,
+		String phone,
 		LocalDateTime createdAt
 ) {
 }

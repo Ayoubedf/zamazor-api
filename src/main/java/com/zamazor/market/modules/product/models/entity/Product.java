@@ -2,7 +2,6 @@ package com.zamazor.market.modules.product.models.entity;
 
 import com.zamazor.market.modules.catalog.exception.OutOfStockException;
 import com.zamazor.market.modules.catalog.models.entity.CartItem;
-import com.zamazor.market.modules.catalog.models.entity.OrderItem;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
@@ -55,10 +54,6 @@ public class Product {
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "category_id", nullable = false)
 	private Category category;
-
-	@Builder.Default
-	@OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
-	private List<OrderItem> orderItems = new ArrayList<>();
 
 	@Builder.Default
 	@OneToMany(mappedBy = "product", fetch = FetchType.LAZY)

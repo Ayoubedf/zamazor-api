@@ -1,6 +1,5 @@
 package com.zamazor.market.modules.catalog.models.entity;
 
-import com.zamazor.market.modules.product.models.entity.Product;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,7 +16,16 @@ public class OrderItem {
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
 
-	@Column(name = "unit_price", nullable = false)
+	@Column(name = "product_id")
+	private UUID productId;
+
+	@Column(name = "product_name", nullable = false)
+	private String productName;
+
+	@Column(name = "product_image_url", columnDefinition = "TEXT")
+	private String productImageUrl;
+
+	@Column(name = "unit_price", nullable = false, precision = 10, scale = 2)
 	private BigDecimal unitPrice;
 
 	@Column(nullable = false)
@@ -26,8 +34,4 @@ public class OrderItem {
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "order_id", nullable = false)
 	private Order order;
-
-	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "product_id", nullable = false)
-	private Product product;
 }

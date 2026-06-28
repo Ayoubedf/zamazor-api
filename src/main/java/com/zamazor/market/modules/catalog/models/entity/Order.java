@@ -1,6 +1,9 @@
 package com.zamazor.market.modules.catalog.models.entity;
 
 import com.zamazor.market.modules.catalog.exception.IllegalOrderStateException;
+import com.zamazor.market.modules.catalog.models.dto.StockRestoreDto;
+import com.zamazor.market.modules.product.exception.OrderCancellationException;
+import com.zamazor.market.modules.product.exception.OrderRefundException;
 import com.zamazor.market.modules.product.models.entity.Product;
 import com.zamazor.market.modules.user.models.entity.User;
 import jakarta.persistence.*;
@@ -68,7 +71,10 @@ public class Order {
 			product.deductStock(cartItem.getQuantity());
 
 			OrderItem orderItem = new OrderItem();
-			orderItem.setProduct(product);
+			orderItem.setOrder(order);
+			orderItem.setProductId(product.getId());
+			orderItem.setProductName(product.getName());
+			orderItem.setProductImageUrl(product.getImageUrl());
 			orderItem.setUnitPrice(product.getPrice());
 			orderItem.setQuantity(cartItem.getQuantity());
 
@@ -82,15 +88,44 @@ public class Order {
 		return order;
 	}
 
-	public void cancel() {
-		if (this.status != OrderStatus.PENDING && this.status != OrderStatus.CONFIRMED) {
-			throw new IllegalOrderStateException("Order cannot be canceled in its current state: " + this.status);
+	public List<StockRestoreDto> cancel(LocalDateTime now) {
+		if (this.status == OrderStatus.CANCELED) return List.of();
+		if (this.status == OrderStatus.DELIVERED || this.status == OrderStatus.REFUNDED) {
+			throw new OrderCancellationException("Cannot cancel an order that is already delivered or refunded.");
 		}
-
-		for (OrderItem item : this.items) {
-			item.getProduct().restoreStock(item.getQuantity());
+		if (this.createdAt.isBefore(now.minusDays(2))) {
+			throw new OrderCancellationException("Order cancellation window (2 days) has expired.");
 		}
 
 		this.status = OrderStatus.CANCELED;
+		return getStockRestoreDtos();
+	}
+
+	public List<StockRestoreDto> refund(LocalDateTime now) {
+		if (this.status == OrderStatus.REFUNDED) {
+			return List.of();
+		}
+		if (this.status != OrderStatus.DELIVERED) {
+			throw new OrderRefundException("Only completed or delivered orders can be refunded.");
+		}
+		if (this.createdAt.isBefore(now.minusDays(30))) {
+			throw new OrderRefundException("Order exceeds the 30-day refund policy window.");
+		}
+
+		this.status = OrderStatus.REFUNDED;
+		return getStockRestoreDtos();
+	}
+
+	public void transitionTo(OrderStatus newStatus) {
+		if (this.status == OrderStatus.CANCELED || this.status == OrderStatus.REFUNDED) {
+			throw new IllegalOrderStateException("Cannot modify a finalized order");
+		}
+		this.status = newStatus;
+	}
+
+	private List<StockRestoreDto> getStockRestoreDtos() {
+		return this.items.stream()
+				.map(item -> new StockRestoreDto(item.getProductId(), item.getQuantity()))
+				.toList();
 	}
 }

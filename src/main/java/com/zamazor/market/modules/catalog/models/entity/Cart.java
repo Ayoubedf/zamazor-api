@@ -31,6 +31,10 @@ public class Cart {
 	private List<CartItem> items = new ArrayList<>();
 
 	public void addProduct(Product product, int quantity) {
+		if (product.getStockQuantity() < quantity) {
+			throw new OutOfStockException("Insufficient stock for product: " + product.getName());
+		}
+
 		this.items.stream()
 				.filter(item -> item.getProduct().getId().equals(product.getId()))
 				.findFirst()
