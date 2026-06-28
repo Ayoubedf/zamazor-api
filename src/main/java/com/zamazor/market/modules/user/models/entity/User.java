@@ -1,5 +1,9 @@
 package com.zamazor.market.modules.user.models.entity;
 
+import com.zamazor.market.modules.catalog.models.entity.Address;
+import com.zamazor.market.modules.catalog.models.entity.Cart;
+import com.zamazor.market.modules.catalog.models.entity.Order;
+import com.zamazor.market.modules.wishlist.models.entity.Wishlist;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,7 +14,6 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -28,20 +31,14 @@ public class User implements UserDetails {
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
 
-	private String name;
+	@Column(name = "full_name")
+	private String fullName;
 
 	@Column(unique = true, nullable = false)
 	private String email;
 
 	@Column(name = "is_admin", nullable = false)
 	private Boolean isAdmin;
-
-	@Nullable
-	@Column(name = "avatar_url")
-	private String avatarUrl;
-
-	@Column(name = "birth_date", nullable = false)
-	private LocalDate birthDate;
 
 	@Column(nullable = false)
 	private String password;
@@ -65,4 +62,19 @@ public class User implements UserDetails {
 		return email;
 	}
 
+	@Nullable
+	@OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	@JoinColumn(name = "address_id")
+	private Address address;
+
+	@Nullable
+	@OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	@JoinColumn(name = "cart_id")
+	private Cart cart;
+
+	@OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
+	private List<Order> orders;
+
+	@OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
+	private List<Wishlist> wishlists;
 }

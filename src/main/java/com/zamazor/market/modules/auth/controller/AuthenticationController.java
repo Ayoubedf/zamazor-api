@@ -19,25 +19,25 @@ import org.springframework.web.util.UriComponentsBuilder;
 @RequiredArgsConstructor
 public class AuthenticationController {
 
-    private final AuthenticationService authenticationService;
-    private final CookieUtility cookieUtility;
-		private final AuthenticationMapper authenticationMapper;
+	private final AuthenticationService authenticationService;
+	private final CookieUtility cookieUtility;
+	private final AuthenticationMapper authenticationMapper;
 
-    @PostMapping("/register")
-    public ResponseEntity<UserDto> register(@RequestBody @Valid RegisterRequest request, UriComponentsBuilder uriBuilder) {
-        var response = authenticationService.register(request);
-        var uri = uriBuilder.path("/users/{id}").buildAndExpand(response.getId()).toUri();
-        return ResponseEntity.created(uri).body(response);
-    }
+	@PostMapping("/register")
+	public ResponseEntity<UserDto> register(@RequestBody @Valid RegisterRequest request, UriComponentsBuilder uriBuilder) {
+		var response = authenticationService.register(request);
+		var uri = uriBuilder.path("/users/{id}").buildAndExpand(response.id()).toUri();
+		return ResponseEntity.created(uri).body(response);
+	}
 
-    @PostMapping("/login")
-    public ResponseEntity<AuthenticationResponse> login(@RequestBody @Valid AuthenticationRequest request, HttpServletResponse response) {
-        AuthenticationResult authenticationResult = authenticationService.authenticate(request);
-        ResponseCookie cookie = cookieUtility.createRefreshTokenCookie(authenticationResult.getRefreshToken());
+	@PostMapping("/login")
+	public ResponseEntity<AuthenticationResponse> login(@RequestBody @Valid AuthenticationRequest request, HttpServletResponse response) {
+		AuthenticationResult authenticationResult = authenticationService.authenticate(request);
+		ResponseCookie cookie = cookieUtility.createRefreshTokenCookie(authenticationResult.refreshToken());
 
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-        return ResponseEntity.ok(authenticationMapper.toAuthenticationResponse(authenticationResult));
-    }
+		response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+		return ResponseEntity.ok(authenticationMapper.toAuthenticationResponse(authenticationResult));
+	}
 
 	@PostMapping("/refresh")
 	public ResponseEntity<TokenRefreshResponse> refresh(
@@ -45,15 +45,15 @@ public class AuthenticationController {
 			HttpServletResponse response
 	) {
 		TokenPair tokenPair = authenticationService.refreshTokens(refreshToken);
-		ResponseCookie cookie = cookieUtility.createRefreshTokenCookie(tokenPair.getRefreshToken());
+		ResponseCookie cookie = cookieUtility.createRefreshTokenCookie(tokenPair.refreshToken());
 
 		response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 		return ResponseEntity.ok(authenticationMapper.toRefreshResponse(tokenPair));
 	}
 
-    @GetMapping("/me")
-    public ResponseEntity<UserDto> me() {
-        return ResponseEntity.ok(authenticationService.getCurrentUser());
-    }
+	@GetMapping("/me")
+	public ResponseEntity<UserDto> me() {
+		return ResponseEntity.ok(authenticationService.getCurrentUser());
+	}
 
 }

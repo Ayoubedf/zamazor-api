@@ -1,19 +1,26 @@
 spring:
   application:
-    name: zamazor
+    name: ${application.name}
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASS}
+    url: ${DB_URL:}
+    username: ${DB_USER:}
+    password: ${DB_PASS:}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
-      dialect: org.hibernate.dialect.PostgreSQLDialect
     show-sql: true
     properties:
       hibernate:
         format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUDNAME:}
+  api-key: ${CLOUDINARY_APIKEY:}
+  api-secret: ${CLOUDINARY_APISECRET:}
+application:
+  name: "zamazor"
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
   security:
     jwt:
       refresh:

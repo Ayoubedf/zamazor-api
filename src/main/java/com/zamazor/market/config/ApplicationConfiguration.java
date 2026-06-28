@@ -13,32 +13,39 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Clock;
+
 @Configuration
 @RequiredArgsConstructor
 public class ApplicationConfiguration {
-    private final UserRepository userRepository;
+	private final UserRepository userRepository;
 
-    @Bean
-    public UserDetailsService userDetailsService() {
-        return username -> userRepository.findByEmail(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-    }
+	@Bean
+	public UserDetailsService userDetailsService() {
+		return username -> userRepository.findByEmail(username)
+				.orElseThrow(() -> new UsernameNotFoundException("User not found"));
+	}
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) {
-        return config.getAuthenticationManager();
-    }
+	@Bean
+	public AuthenticationManager authenticationManager(AuthenticationConfiguration config) {
+		return config.getAuthenticationManager();
+	}
 
-    @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService());
-        authProvider.setPasswordEncoder(passwordEncoder());
+	@Bean
+	public AuthenticationProvider authenticationProvider() {
+		DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService());
+		authProvider.setPasswordEncoder(passwordEncoder());
 
-        return authProvider;
-    }
+		return authProvider;
+	}
+
+	@Bean
+	public Clock clock() {
+		return Clock.systemDefaultZone();
+	}
 }

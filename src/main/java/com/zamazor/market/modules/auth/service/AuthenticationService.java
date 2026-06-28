@@ -16,73 +16,75 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final UserMapper userMapper;
-    private final AuthenticationManager authenticationManager;
-    private final JwtService jwtService;
+	private final UserRepository userRepository;
+	private final PasswordEncoder passwordEncoder;
+	private final UserMapper userMapper;
+	private final AuthenticationManager authenticationManager;
+	private final JwtService jwtService;
 
-    public UserDto register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new EmailAlreadyExistsException("An account with this email already exists");
-        }
-        var user = userMapper.toEntity(request);
-        user.setPassword(Objects.requireNonNull(passwordEncoder.encode(request.getPassword())));
-        user.setIsAdmin(false);
-        return userMapper.toDto(userRepository.save(user));
-    }
+	@Transactional
+	public UserDto register(RegisterRequest request) {
+		if (userRepository.existsByEmail(request.email())) {
+			throw new EmailAlreadyExistsException("An account with this email already exists");
+		}
+		var user = userMapper.toEntity(request);
+		user.setPassword(Objects.requireNonNull(passwordEncoder.encode(request.password())));
+		user.setIsAdmin(false);
+		return userMapper.toDto(userRepository.save(user));
+	}
 
-    public AuthenticationResult authenticate(AuthenticationRequest request) {
-        var authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
-        if (!(authentication.getPrincipal() instanceof User user)) {
-            throw new BadCredentialsException("Invalid Credentials");
-        }
-        var userDto = userMapper.toDto(user);
-        var accessToken = jwtService.generateAccessToken(user);
-        var refreshToken = jwtService.generateRefreshToken(user);
+	public AuthenticationResult authenticate(AuthenticationRequest request) {
+		var authentication = authenticationManager.authenticate(
+				new UsernamePasswordAuthenticationToken(request.email(), request.password())
+		);
+		if (!(authentication.getPrincipal() instanceof User user)) {
+			throw new BadCredentialsException("Invalid Credentials");
+		}
+		var userDto = userMapper.toDto(user);
+		var accessToken = jwtService.generateAccessToken(user);
+		var refreshToken = jwtService.generateRefreshToken(user);
 
-        return new AuthenticationResult(refreshToken, accessToken, userDto);
-    }
+		return new AuthenticationResult(refreshToken, accessToken, userDto);
+	}
 
-    public TokenPair refreshTokens(String refreshToken) {
-        if (refreshToken == null || refreshToken.isBlank()) {
-            throw new UnauthorizedException("Refresh token is missing");
-        }
+	public TokenPair refreshTokens(String refreshToken) {
+		if (refreshToken == null || refreshToken.isBlank()) {
+			throw new UnauthorizedException("Refresh token is missing");
+		}
 
-        try {
-            String email = jwtService.extractRefreshUsername(refreshToken);
-            User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UnauthorizedException("User not found"));
+		try {
+			String email = jwtService.extractRefreshUsername(refreshToken);
+			User user = userRepository.findByEmail(email)
+					.orElseThrow(() -> new UnauthorizedException("User not found"));
 
-            if (!jwtService.isRefreshTokenValid(refreshToken, user)) {
-                throw new UnauthorizedException("Invalid refresh token credentials");
-            }
+			if (!jwtService.isRefreshTokenValid(refreshToken, user)) {
+				throw new UnauthorizedException("Invalid refresh token credentials");
+			}
 
-            String newAccessToken = jwtService.generateAccessToken(user);
-            String newRefreshToken = jwtService.generateRefreshToken(user);
+			String newAccessToken = jwtService.generateAccessToken(user);
+			String newRefreshToken = jwtService.generateRefreshToken(user);
 
-            return new TokenPair(newAccessToken, newRefreshToken);
+			return new TokenPair(newAccessToken, newRefreshToken);
 
-        } catch (JwtException | IllegalArgumentException e) {
-            throw new UnauthorizedException("Invalid or expired refresh token");
-        }
-    }
+		} catch (JwtException | IllegalArgumentException e) {
+			throw new UnauthorizedException("Invalid or expired refresh token");
+		}
+	}
 
-    public UserDto getCurrentUser() {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
+	public UserDto getCurrentUser() {
+		var authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null || !(authentication.getPrincipal() instanceof User user)) {
-            throw new BadCredentialsException("User not authenticated");
-        }
+		if (authentication == null || !(authentication.getPrincipal() instanceof User user)) {
+			throw new UnauthorizedException("User not authenticated");
+		}
 
-        return userMapper.toDto(user);
-    }
+		return userMapper.toDto(user);
+	}
 }
