@@ -54,12 +54,6 @@ public class ProductService {
 		return productMapper.toDto(productRepository.save(product));
 	}
 
-	public PageResponse<ProductDto> getAll(Pageable pageable) {
-		Page<ProductDto> productPage = productRepository
-				.findAll(pageable).map(productMapper::toDto);
-		return new PageResponse<>(productPage);
-	}
-
 	public PageResponse<ProductDto> getByCategory(UUID categoryId, Pageable pageable) {
 		if (!categoryRepository.existsById(categoryId)) {
 			throw new CategoryNotFoundException("Category with id: " + categoryId + " not found");
@@ -113,6 +107,9 @@ public class ProductService {
 
 	@Transactional
 	public void delete(UUID id) {
+		if (!categoryRepository.existsById(id)) {
+			throw new CategoryNotFoundException("Category with id: " + id + " not found");
+		}
 		productRepository.deleteById(id);
 	}
 }

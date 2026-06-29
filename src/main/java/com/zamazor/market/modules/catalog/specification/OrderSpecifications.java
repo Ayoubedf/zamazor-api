@@ -15,15 +15,12 @@ public class OrderSpecifications {
 		return (root, query, criteriaBuilder) -> {
 			List<Predicate> predicates = new ArrayList<>();
 
-			// 1. Structural join for filtering paths
 			Join<Order, User> userJoin = root.join("user", JoinType.LEFT);
 
-			// 2. Fetch User ONLY (Safe for pagination as it's a To-One relationship)
 			if (query.getResultType() != Long.class && query.getResultType() != long.class) {
 				root.fetch("user", JoinType.LEFT);
 			}
 
-			// 3. Filters
 			if (userFullName != null && !userFullName.isBlank()) {
 				String pattern = "%" + userFullName.toLowerCase() + "%";
 				predicates.add(criteriaBuilder.like(criteriaBuilder.lower(userJoin.get("fullName")), pattern));
