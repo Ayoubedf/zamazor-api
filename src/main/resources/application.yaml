@@ -36,6 +36,7 @@ cloudinary:
 application:
   name: "zamazor"
   frontend-url: ${FRONTEND_URL:http://localhost:5173}
+  backend-url: ${FRONTEND_URL:http://localhost:8080}
   security:
     jwt:
       refresh:
@@ -45,6 +46,9 @@ application:
         secret: ${ACCESS_TOKEN_SECRET_KEY:}
         expiration: 15m
       issuer: auth-service
+  stripe:
+    publishable-key: ${STRIPE_PUBLISHABLE_KEY:}
+    secret-key: ${STRIPE_SECRET_KEY:}
   mail:
     personal-name: "Zamazor Support"
     from-address: ${SMTP_USER:}

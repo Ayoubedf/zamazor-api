@@ -17,6 +17,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -72,6 +73,22 @@ public class OrderController {
 	@PostMapping("/checkout")
 	public ResponseEntity<OrderDto> checkout(@AuthenticationPrincipal User user, @Valid @RequestBody CheckoutRequest request) {
 		return ResponseEntity.ok(orderService.checkout(user, request));
+	}
+
+	@GetMapping("/checkout/{orderId}/pay")
+	public ResponseEntity<Map<String, String>> payOrder(@PathVariable UUID orderId) {
+		String paymentUrl = orderService.regeneratePaymentLink(orderId);
+		return ResponseEntity.ok(Map.of("url", paymentUrl));
+	}
+
+	@GetMapping("/checkout/{orderId}/verify")
+	public ResponseEntity<OrderDto> verifyPaymentStatus(
+			@PathVariable UUID orderId,
+			@RequestParam("sessionId") String sessionId,
+			@AuthenticationPrincipal User user
+	) {
+		OrderDto verifiedOrder = orderService.verifyAndCompleteOrder(orderId, sessionId, user);
+		return ResponseEntity.ok(verifiedOrder);
 	}
 
 	@PostMapping("/{orderId}/cancel")

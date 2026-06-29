@@ -9,6 +9,7 @@ import com.zamazor.market.modules.product.exception.OrderCancellationException;
 import com.zamazor.market.modules.product.exception.OrderRefundException;
 import com.zamazor.market.modules.product.exception.ProductNotFoundException;
 import com.zamazor.market.modules.product.models.dto.CategoryAlreadyExistsException;
+import com.zamazor.market.payment.exception.PaymentGatewayException;
 import io.jsonwebtoken.ExpiredJwtException;
 import org.jspecify.annotations.NonNull;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
@@ -55,6 +56,7 @@ public class ExceptionResolver extends ResponseEntityExceptionHandler {
 			case EmptyCartException e -> createProblemDetail(400, e.getMessage(), "Cart is Empty");
 			case OutOfStockException e -> createProblemDetail(409, e.getMessage(), "Insufficient Product Stock");
 			case AddressNotFoundException e -> createProblemDetail(404, e.getMessage(), "Address Not Found");
+			case PaymentGatewayException e -> createProblemDetail(502, e.getMessage(), "Payment Gateway Error");
 			default -> createProblemDetail(500, exception.getMessage(), "Unknown internal server error");
 		};
 	}
