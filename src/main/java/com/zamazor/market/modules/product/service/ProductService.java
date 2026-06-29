@@ -2,6 +2,7 @@ package com.zamazor.market.modules.product.service;
 
 import com.zamazor.market.modules.product.exception.CategoryNotFoundException;
 import com.zamazor.market.modules.product.exception.ProductNotFoundException;
+import com.zamazor.market.modules.catalog.repository.CartItemRepository;
 import com.zamazor.market.shared.api.PageResponse;
 import com.zamazor.market.media.model.StoredMediaMetadata;
 import com.zamazor.market.media.ports.MediaStoragePort;
@@ -14,6 +15,7 @@ import com.zamazor.market.modules.product.repository.CategoryRepository;
 import com.zamazor.market.modules.product.repository.ProductRepository;
 import com.zamazor.market.modules.product.repository.StoreRepository;
 import com.zamazor.market.modules.product.specification.ProductSpecifications;
+import com.zamazor.market.modules.wishlist.repository.WishlistRepository;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
@@ -34,6 +36,8 @@ public class ProductService {
 	private final ProductRepository productRepository;
 	private final CategoryRepository categoryRepository;
 	private final StoreRepository storeRepository;
+	private final CartItemRepository cartItemRepository;
+	private final WishlistRepository wishlistRepository;
 	private final ProductMapper productMapper;
 	private final MediaStoragePort mediaStorage;
 
@@ -107,9 +111,13 @@ public class ProductService {
 
 	@Transactional
 	public void delete(UUID id) {
-		if (!categoryRepository.existsById(id)) {
-			throw new CategoryNotFoundException("Category with id: " + id + " not found");
-		}
-		productRepository.deleteById(id);
+		var product = productRepository.findById(id)
+				.orElseThrow(() -> new ProductNotFoundException("Product with id: " + id + " not found"));
+
+		wishlistRepository.deleteByProductId(id);
+		cartItemRepository.deleteByProductId(id);
+		productRepository.delete(product);
+		productRepository.flush();
+		mediaStorage.delete(product.getImagePublicId());
 	}
 }
