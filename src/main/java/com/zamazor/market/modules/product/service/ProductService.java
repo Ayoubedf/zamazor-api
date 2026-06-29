@@ -107,8 +107,8 @@ public class ProductService {
 
 	@Transactional
 	public void delete(UUID id) {
-		if (!categoryRepository.existsById(id)) {
-			throw new CategoryNotFoundException("Category with id: " + id + " not found");
+		if (!productRepository.existsById(id)) {
+			throw new ProductNotFoundException("Product with id: " + id + " not found");
 		}
 		productRepository.deleteById(id);
 	}

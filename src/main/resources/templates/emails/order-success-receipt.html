@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Order Placed Successfully</title>
+    <title>Payment Confirmed - Receipt</title>
 </head>
 <body style="background-color: #f3f4f6; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1f2937; -webkit-font-smoothing: antialiased;">
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
@@ -11,7 +11,7 @@
     <tr>
         <td align="center">
             <table width="100%" max-width="570" cellpadding="0" cellspacing="0" role="presentation"
-                   style="max-width: 570px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); border-top: 6px solid #2563eb;">
+                   style="max-width: 570px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); border-top: 6px solid #10b981;">
                 <tr>
                     <td style="padding: 40px 32px;">
                         <h1 th:text="${appName}"
@@ -19,34 +19,28 @@
                             CompanyName
                         </h1>
 
+                        <div style="margin: 0 0 24px 0;">
+                            <span style="display: inline-block; background-color: #d1fae5; color: #065f46; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em;">
+                                Payment Confirmed
+                            </span>
+                        </div>
+
                         <h2 style="font-size: 24px; font-weight: 700; color: #111827; margin: 0 0 16px 0; letter-spacing: -0.025em;">
-                            Order Placed Successfully!
+                            Thank you for your purchase!
                         </h2>
                         <p style="font-size: 16px; line-height: 1.6; color: #4b5563; margin: 0 0 12px 0;">
-                            Thank you for your order. We have received your checkout details, and your order status is
-                            currently <strong style="color: #d97706;">Pending Payment</strong>.
+                            We have successfully processed your payment via Stripe. Your order is now being processed by
+                            our warehouse logistics team and will prepare for shipping shortly.
                         </p>
-                        <p style="font-size: 16px; line-height: 1.6; color: #4b5563; margin: 0 0 28px 0;">
-                            To secure your items and initiate shipping, please complete your secure checkout process by
-                            clicking the button below:
+                        <p style="font-size: 16px; line-height: 1.6; color: #4b5563; margin: 0 0 32px 0;">
+                            A summary of your transaction details and itemized receipt can be found below:
                         </p>
-
-                        <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 0 40px 0;">
-                            <tr>
-                                <td>
-                                    <a th:href="${paymentUrl}"
-                                       style="display: inline-block; background-color: #2563eb; color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none; padding: 14px 32px; border-radius: 8px; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);">
-                                        Complete Secure Payment
-                                    </a>
-                                </td>
-                            </tr>
-                        </table>
 
                         <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
                                style="border: 1px solid #e5e7eb; border-radius: 12px; margin: 0 0 32px 0; overflow: hidden;">
                             <tr style="background-color: #f9fafb;">
                                 <td style="padding: 16px 20px; border-bottom: 1px solid #e5e7eb;">
-                                    <span style="font-size: 14px; font-weight: 600; color: #374151;">Order Summary</span>
+                                    <span style="font-size: 14px; font-weight: 600; color: #374151;">Receipt Summary</span>
                                 </td>
                                 <td align="right" style="padding: 16px 20px; border-bottom: 1px solid #e5e7eb;">
                                     <span th:text="'#' + ${orderId}"
@@ -68,10 +62,10 @@
                                         </tr>
                                         <tr>
                                             <td style="font-size: 15px; font-weight: 700; color: #111827; padding-top: 10px; border-top: 1px dashed #e5e7eb;">
-                                                Total Amount Due:
+                                                Amount Paid:
                                             </td>
                                             <td align="right" th:text="${totalAmount}"
-                                                style="font-size: 16px; font-weight: 700; color: #2563eb; padding-top: 10px; border-top: 1px dashed #e5e7eb;">
+                                                style="font-size: 16px; font-weight: 700; color: #10b981; padding-top: 10px; border-top: 1px dashed #e5e7eb;">
                                                 0.00 MAD
                                             </td>
                                         </tr>
@@ -85,11 +79,11 @@
                             <tr>
                                 <td style="padding: 20px;">
                                     <p style="font-size: 14px; font-weight: 600; color: #374151; margin: 0 0 8px 0;">
-                                        Need help with your payment?
+                                        Delivery Questions?
                                     </p>
                                     <p style="font-size: 14px; line-height: 1.5; color: #6b7280; margin: 0 0 16px 0;">
-                                        If you encounter any issues checking out or have questions regarding this bill,
-                                        reach out to our team instantly:
+                                        If you need to update your tracking delivery address profile or have issues with
+                                        fulfillment timelines, please contact support:
                                     </p>
 
                                     <table cellpadding="0" cellspacing="0" role="presentation">
