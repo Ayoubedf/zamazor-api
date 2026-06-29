@@ -1,9 +1,13 @@
 package com.zamazor.market.modules.catalog.service;
 
+import com.zamazor.market.config.ApplicationProperties;
+import com.zamazor.market.mail.event.OrderStatusChangedEvent;
+import com.zamazor.market.mail.service.EmailService;
 import com.zamazor.market.modules.catalog.models.dto.AddressRequest;
 import com.zamazor.market.modules.catalog.models.dto.StockRestoreDto;
 import com.zamazor.market.modules.catalog.models.entity.AddressComponent;
 import com.zamazor.market.modules.product.repository.ProductRepository;
+import com.zamazor.market.modules.user.repository.UserRepository;
 import com.zamazor.market.shared.api.PageResponse;
 import com.zamazor.market.modules.catalog.exception.*;
 import com.zamazor.market.modules.catalog.models.dto.CheckoutRequest;
@@ -16,15 +20,19 @@ import com.zamazor.market.modules.catalog.repository.OrderRepository;
 import com.zamazor.market.modules.catalog.specification.OrderSpecifications;
 import com.zamazor.market.modules.user.models.entity.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.Year;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Transactional(readOnly = true)
@@ -37,6 +45,10 @@ public class OrderService {
 	private final AddressService addressService;
 	private final ProductRepository productRepository;
 	private final Clock clock;
+	private final EmailService emailService;
+	private final ApplicationProperties application;
+	private final ApplicationEventPublisher eventPublisher;
+	private final UserRepository userRepository;
 
 	public PageResponse<OrderDto> getAll(String userFullName, OrderStatus status, Pageable pageable) {
 		Specification<Order> spec = OrderSpecifications.createSpec(userFullName, status);
@@ -83,6 +95,8 @@ public class OrderService {
 		cart.clear();
 		cartRepository.saveAndFlush(cart);
 
+		sendOrderSuccessEmail(user.getEmail(), savedOrder);
+
 		return orderMapper.toDto(savedOrder);
 	}
 
@@ -90,6 +104,8 @@ public class OrderService {
 	public OrderDto changeStatus(UUID orderId, OrderStatus newStatus) {
 		var order = orderRepository.findById(orderId)
 				.orElseThrow(() -> new OrderNotFoundException("Order not found"));
+		var user = userRepository.findById(order.getUser().getId())
+				.orElseThrow(() -> new UsernameNotFoundException("User not found"));
 		LocalDateTime now = LocalDateTime.now(clock);
 
 		if (order.getStatus() == newStatus) return orderMapper.toDto(order);
@@ -99,8 +115,11 @@ public class OrderService {
 			case REFUNDED -> handleRefund(order, now);
 			default -> order.transitionTo(newStatus);
 		}
+		var savedOrder = orderRepository.save(order);
 
-		return orderMapper.toDto(orderRepository.save(order));
+		eventPublisher.publishEvent(new OrderStatusChangedEvent(savedOrder, user, newStatus));
+
+		return orderMapper.toDto(savedOrder);
 	}
 
 	@Transactional
@@ -117,7 +136,11 @@ public class OrderService {
 		LocalDateTime now = LocalDateTime.now(clock);
 		handleCancellation(order, now);
 
-		return orderMapper.toDto(order);
+		var savedOrder = orderRepository.save(order);
+
+		eventPublisher.publishEvent(new OrderStatusChangedEvent(savedOrder, user, OrderStatus.CANCELED));
+
+		return orderMapper.toDto(savedOrder);
 	}
 
 	private void handleCancellation(Order order, LocalDateTime now) {
@@ -145,5 +168,24 @@ public class OrderService {
 						productRepository.save(product);
 					});
 		}
+	}
+
+	private void sendOrderSuccessEmail(String to, Order order) {
+		Map<String, Object> mailVariables = Map.of(
+				"appName", application.name(),
+				"paymentUrl", application.frontendUrl() + "/checkout/pay/" + order.getId(),
+				"orderId", order.getId(),
+				"items", order.getItems().stream(),
+				"totalAmount", order.getTotal(),
+				"supportEmail", application.supportEmail(),
+				"year", Year.now().getValue()
+		);
+
+		emailService.sendHtmlEmail(
+				to,
+				"Action Required: Complete your order #" + order.getId(),
+				"checkout-success",
+				mailVariables
+		);
 	}
 }
