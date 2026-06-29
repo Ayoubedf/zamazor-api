@@ -18,4 +18,6 @@ public interface WishlistRepository extends JpaRepository<Wishlist, UUID> {
 	void deleteByUserId(UUID userId);
 
 	void deleteByUserIdAndProductId(UUID userId, UUID productId);
+
+	void deleteByProductId(UUID productId);
 }
