@@ -1,5 +1,7 @@
 package com.zamazor.market.modules.auth.service;
 
+import com.zamazor.market.config.ApplicationProperties;
+import com.zamazor.market.mail.service.EmailService;
 import com.zamazor.market.security.crypto.JwtService;
 import com.zamazor.market.modules.auth.exception.EmailAlreadyExistsException;
 import com.zamazor.market.modules.auth.exception.UnauthorizedException;
@@ -18,6 +20,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Year;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -28,6 +32,8 @@ public class AuthenticationService {
 	private final UserMapper userMapper;
 	private final AuthenticationManager authenticationManager;
 	private final JwtService jwtService;
+	private final EmailService emailService;
+	private final ApplicationProperties application;
 
 	@Transactional
 	public UserDto register(RegisterRequest request) {
@@ -37,6 +43,9 @@ public class AuthenticationService {
 		var user = userMapper.toEntity(request);
 		user.setPassword(Objects.requireNonNull(passwordEncoder.encode(request.password())));
 		user.setIsAdmin(false);
+
+		sendRegistrationSuccessEmail(user.getEmail());
+
 		return userMapper.toDto(userRepository.save(user));
 	}
 
@@ -86,5 +95,20 @@ public class AuthenticationService {
 		}
 
 		return userMapper.toDto(user);
+	}
+
+	private void sendRegistrationSuccessEmail(String to) {
+		emailService.sendHtmlEmail(
+				to,
+				"Account Registration Successful!",
+				"registration-success",
+				Map.of(
+						"appName", application.name(),
+						"loginUrl", application.frontendUrl() + "/login",
+						"supportEmail", application.supportEmail(),
+						"supportPhone", application.supportPhone(),
+						"year", Year.now().getValue()
+				)
+		);
 	}
 }

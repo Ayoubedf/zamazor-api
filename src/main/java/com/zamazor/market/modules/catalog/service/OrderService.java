@@ -1,9 +1,14 @@
 package com.zamazor.market.modules.catalog.service;
 
+import com.zamazor.market.mail.event.OrderPlacedEvent;
+import com.zamazor.market.mail.event.OrderStatusChangedEvent;
 import com.zamazor.market.modules.catalog.models.dto.AddressRequest;
 import com.zamazor.market.modules.catalog.models.dto.StockRestoreDto;
 import com.zamazor.market.modules.catalog.models.entity.AddressComponent;
 import com.zamazor.market.modules.product.repository.ProductRepository;
+import com.zamazor.market.modules.user.repository.UserRepository;
+import com.zamazor.market.payment.exception.PaymentGatewayException;
+import com.zamazor.market.payment.service.PaymentService;
 import com.zamazor.market.shared.api.PageResponse;
 import com.zamazor.market.modules.catalog.exception.*;
 import com.zamazor.market.modules.catalog.models.dto.CheckoutRequest;
@@ -16,9 +21,11 @@ import com.zamazor.market.modules.catalog.repository.OrderRepository;
 import com.zamazor.market.modules.catalog.specification.OrderSpecifications;
 import com.zamazor.market.modules.user.models.entity.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +44,9 @@ public class OrderService {
 	private final AddressService addressService;
 	private final ProductRepository productRepository;
 	private final Clock clock;
+	private final ApplicationEventPublisher eventPublisher;
+	private final UserRepository userRepository;
+	private final PaymentService paymentService;
 
 	public PageResponse<OrderDto> getAll(String userFullName, OrderStatus status, Pageable pageable) {
 		Specification<Order> spec = OrderSpecifications.createSpec(userFullName, status);
@@ -83,13 +93,30 @@ public class OrderService {
 		cart.clear();
 		cartRepository.saveAndFlush(cart);
 
+		String paymentUrl = paymentService.createCheckoutSession(savedOrder);
+		eventPublisher.publishEvent(new OrderPlacedEvent(savedOrder, user, paymentUrl));
+
 		return orderMapper.toDto(savedOrder);
+	}
+
+	@Transactional(readOnly = true)
+	public String regeneratePaymentLink(UUID orderId) {
+		Order order = orderRepository.findById(orderId)
+				.orElseThrow(() -> new OrderNotFoundException("Order not found"));
+
+		if (order.getStatus() != OrderStatus.PENDING) {
+			throw new IllegalStateException("Order is already processed or completed");
+		}
+
+		return paymentService.createCheckoutSession(order);
 	}
 
 	@Transactional
 	public OrderDto changeStatus(UUID orderId, OrderStatus newStatus) {
 		var order = orderRepository.findById(orderId)
 				.orElseThrow(() -> new OrderNotFoundException("Order not found"));
+		var user = userRepository.findById(order.getUser().getId())
+				.orElseThrow(() -> new UsernameNotFoundException("User not found"));
 		LocalDateTime now = LocalDateTime.now(clock);
 
 		if (order.getStatus() == newStatus) return orderMapper.toDto(order);
@@ -100,7 +127,10 @@ public class OrderService {
 			default -> order.transitionTo(newStatus);
 		}
 
-		return orderMapper.toDto(orderRepository.save(order));
+		var savedOrder = orderRepository.save(order);
+		eventPublisher.publishEvent(new OrderStatusChangedEvent(savedOrder, user, newStatus));
+
+		return orderMapper.toDto(savedOrder);
 	}
 
 	@Transactional
@@ -117,7 +147,33 @@ public class OrderService {
 		LocalDateTime now = LocalDateTime.now(clock);
 		handleCancellation(order, now);
 
-		return orderMapper.toDto(order);
+		var savedOrder = orderRepository.save(order);
+		eventPublisher.publishEvent(new OrderStatusChangedEvent(savedOrder, user, OrderStatus.CANCELED));
+
+		return orderMapper.toDto(savedOrder);
+	}
+
+	@Transactional
+	public OrderDto verifyAndCompleteOrder(UUID orderId, String sessionId, User user) {
+		Order order = orderRepository.findById(orderId)
+				.orElseThrow(() -> new OrderNotFoundException("Order not found"));
+
+		if (!order.getUser().getId().equals(user.getId()))
+			throw new UnauthorizedOrderException("You do not have permission to modify this order");
+		if (order.getStatus() == OrderStatus.PAID)
+			return orderMapper.toDto(order);
+		if (order.getStatus() != OrderStatus.PENDING)
+			throw new IllegalStateException("Order is not in a payable state");
+		if (!paymentService.isSessionPaid(sessionId)) {
+			throw new PaymentGatewayException("Payment verification failed. Transaction is incomplete or declined.");
+		}
+
+		order.setStatus(OrderStatus.PAID);
+		var savedOrder = orderRepository.save(order);
+
+		eventPublisher.publishEvent(new OrderStatusChangedEvent(savedOrder, user, OrderStatus.PAID));
+
+		return orderMapper.toDto(savedOrder);
 	}
 
 	private void handleCancellation(Order order, LocalDateTime now) {
