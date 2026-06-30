@@ -21,21 +21,8 @@ public class AddressService {
 	private final UserRepository userRepository;
 
 	@Transactional
-	public AddressDto create(User user, AddressRequest request) {
-		if (addressRepository.existsByUserId(user.getId())) {
-			throw new IllegalStateException("Address already exists for this user");
-		}
-
-		var address = addressMapper.toEntity(request);
-		user.setAddress(address);
-		userRepository.save(user);
-
-		return addressMapper.toDto(addressRepository.save(address));
-	}
-
-	@Transactional
-	public void createOrUpdate(User user, AddressRequest request) {
-		addressRepository.findByUserId(user.getId())
+	public AddressDto createOrUpdate(User user, AddressRequest request) {
+		return addressRepository.findByUserId(user.getId())
 				.map(existingAddress -> {
 					addressMapper.update(request, existingAddress);
 					return addressMapper.toDto(addressRepository.save(existingAddress));

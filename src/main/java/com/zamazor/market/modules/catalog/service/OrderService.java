@@ -163,7 +163,7 @@ public class OrderService {
 		if (order.getStatus() == OrderStatus.PAID)
 			return orderMapper.toDto(order);
 		if (order.getStatus() != OrderStatus.PENDING)
-			throw new IllegalStateException("Order is not in a payable state");
+			throw new IllegalOrderStateException("Order is not in a payable state");
 		if (!paymentService.isSessionPaid(sessionId)) {
 			throw new PaymentGatewayException("Payment verification failed. Transaction is incomplete or declined.");
 		}
@@ -185,7 +185,7 @@ public class OrderService {
 
 	private void handleRefund(Order order, LocalDateTime now) {
 		if (order.getStatus() != OrderStatus.DELIVERED && order.getStatus() != OrderStatus.PAID) {
-			throw new IllegalStateException("Only paid or delivered orders can be refunded.");
+			throw new IllegalOrderStateException("Only paid or delivered orders can be refunded.");
 		}
 		List<StockRestoreDto> itemsToRestore = order.refund(now);
 		if (!itemsToRestore.isEmpty()) {
