@@ -56,6 +56,7 @@ public class ExceptionResolver extends ResponseEntityExceptionHandler {
 			case EmptyCartException e -> createProblemDetail(400, e.getMessage(), "Cart is Empty");
 			case OutOfStockException e -> createProblemDetail(409, e.getMessage(), "Insufficient Product Stock");
 			case AddressNotFoundException e -> createProblemDetail(404, e.getMessage(), "Address Not Found");
+			case UnauthorizedOrderException e -> createProblemDetail(403, e.getMessage(), "Unauthorized To Modify Order");
 			case PaymentGatewayException e -> createProblemDetail(502, e.getMessage(), "Payment Gateway Error");
 			default -> createProblemDetail(500, exception.getMessage(), "Unknown internal server error");
 		};
