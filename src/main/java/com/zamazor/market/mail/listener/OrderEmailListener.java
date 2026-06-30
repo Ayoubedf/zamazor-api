@@ -12,6 +12,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.Year;
+import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
@@ -49,7 +50,8 @@ public class OrderEmailListener {
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handleOrderNotifications(OrderStatusChangedEvent event) {
 		String userEmail = event.user().getEmail();
-		String orderIdStr = event.order().getId().toString();
+		var order = event.order();
+		String orderIdStr = order.getId().toString();
 
 		Map<String, Object> baseModel = Map.of(
 				"appName", application.name(),
@@ -58,12 +60,16 @@ public class OrderEmailListener {
 				"year", Year.now().getValue()
 		);
 
+		Map<String, Object> paidModel = new HashMap<>(baseModel);
+		paidModel.put("items", order.getItems().stream());
+		paidModel.put("totalAmount", order.getTotal() + "MAD");
+
 		switch (event.status()) {
 			case PAID -> emailService.sendHtmlEmail(
 					userEmail,
 					"Payment Confirmed - Order #" + orderIdStr,
 					"order-success-receipt",
-					baseModel
+					paidModel
 			);
 			case CANCELED -> emailService.sendHtmlEmail(
 					userEmail,
