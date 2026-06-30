@@ -45,7 +45,7 @@ public class ProductService {
 	public ProductDto create(CreateProductRequest request, @NonNull MultipartFile image) throws IOException {
 		var product = productMapper.toEntity(request);
 		var category = categoryRepository.findById(request.categoryId())
-				.orElseThrow(() -> new CategoryNotFoundException("Category with id: " + request.categoryId() + " not found"));
+				.orElseThrow(() -> new CategoryNotFoundException(request.categoryId()));
 		var store = storeRepository.findOne()
 				.orElseThrow(() -> new IllegalStateException("The single store instance is missing from the database!"));
 
@@ -60,7 +60,7 @@ public class ProductService {
 
 	public PageResponse<ProductDto> getByCategory(UUID categoryId, Pageable pageable) {
 		if (!categoryRepository.existsById(categoryId)) {
-			throw new CategoryNotFoundException("Category with id: " + categoryId + " not found");
+			throw new CategoryNotFoundException(categoryId);
 		}
 
 		Page<ProductDto> productPage = productRepository
@@ -85,19 +85,19 @@ public class ProductService {
 	public ProductDto getById(UUID id) {
 		return productRepository.findById(id)
 				.map(productMapper::toDto)
-				.orElseThrow(() -> new ProductNotFoundException("Product with id: " + id + " not found"));
+				.orElseThrow(() -> new ProductNotFoundException(id));
 	}
 
 	@Transactional
 	public ProductDto update(UUID id, @NonNull UpdateProductRequest request, MultipartFile image) throws IOException {
 		var product = productRepository.findById(id)
-				.orElseThrow(() -> new ProductNotFoundException("Product with id: " + id + " not found"));
+				.orElseThrow(() -> new ProductNotFoundException(id));
 
 		productMapper.update(request, product);
 
 		if (request.categoryId() != null && !request.categoryId().equals(product.getCategory().getId())) {
 			var category = categoryRepository.findById(request.categoryId())
-					.orElseThrow(() -> new CategoryNotFoundException("Category with id: " + request.categoryId() + " not found"));
+					.orElseThrow(() -> new CategoryNotFoundException(request.categoryId()));
 			product.setCategory(category);
 		}
 		if (image != null && image.getSize() > 0) {
@@ -112,7 +112,7 @@ public class ProductService {
 	@Transactional
 	public void delete(UUID id) {
 		var product = productRepository.findById(id)
-				.orElseThrow(() -> new ProductNotFoundException("Product with id: " + id + " not found"));
+				.orElseThrow(() -> new ProductNotFoundException(id));
 
 		wishlistRepository.deleteByProductId(id);
 		cartItemRepository.deleteByProductId(id);

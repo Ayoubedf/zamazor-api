@@ -43,7 +43,6 @@ public class SecurityConfiguration {
 								.requestMatchers("/auth/me").authenticated()
 								.requestMatchers(HttpMethod.GET, "/products/**").permitAll()
 								.requestMatchers(HttpMethod.GET, "/categories/**").permitAll()
-								.requestMatchers(HttpMethod.GET, "/orders/checkout/{orderId}/pay").permitAll()
 								.anyRequest().authenticated())
 				.sessionManagement(session -> session
 						.sessionCreationPolicy(SessionCreationPolicy.STATELESS)

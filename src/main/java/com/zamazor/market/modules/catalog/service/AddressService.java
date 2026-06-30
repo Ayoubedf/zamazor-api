@@ -52,13 +52,13 @@ public class AddressService {
 	public AddressDto getDefaultAddress(UUID userId) {
 		return addressRepository.findByUserId(userId)
 				.map(addressMapper::toDto)
-				.orElseThrow(() -> new AddressNotFoundException("No default address set for this user"));
+				.orElseThrow(AddressNotFoundException::new);
 	}
 
 	@Transactional
 	public AddressDto update(User user, AddressRequest request) {
 		var existingAddress = addressRepository.findByUserId(user.getId())
-				.orElseThrow(() -> new AddressNotFoundException("Address not found for this user"));
+				.orElseThrow(AddressNotFoundException::new);
 
 		addressMapper.update(request, existingAddress);
 

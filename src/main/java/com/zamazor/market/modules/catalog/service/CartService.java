@@ -28,7 +28,7 @@ public class CartService {
 	public CartDto getCartByUserId(UUID userId) {
 		return cartRepository.findByUserId(userId)
 				.map(cartMapper::toDto)
-				.orElseThrow(() -> new CartNotFoundException("Cart not found for user: " + userId));
+				.orElseThrow(CartNotFoundException::new);
 	}
 
 	@Transactional
@@ -44,7 +44,7 @@ public class CartService {
 		});
 
 		var product = productRepository.findById(request.productId())
-				.orElseThrow(() -> new ProductNotFoundException("Product not found"));
+				.orElseThrow(() -> new ProductNotFoundException(request.productId()));
 
 		cart.addProduct(product, request.quantity());
 		return cartMapper.toDto(cartRepository.saveAndFlush(cart));
@@ -53,9 +53,9 @@ public class CartService {
 	@Transactional
 	public CartDto updateItemQuantity(UUID userId, UUID productId, Integer quantity) {
 		var cart = cartRepository.findByUserId(userId)
-				.orElseThrow(() -> new CartNotFoundException("Cart not found for user: " + userId));
+				.orElseThrow(CartNotFoundException::new);
 		var product = productRepository.findById(productId)
-				.orElseThrow(() -> new ProductNotFoundException("Product with id: " + productId + " not found"));
+				.orElseThrow(() -> new ProductNotFoundException(productId));
 
 		cart.updateItemQuantity(product, quantity);
 
@@ -65,7 +65,7 @@ public class CartService {
 	@Transactional
 	public CartDto removeItem(UUID userId, UUID productId) {
 		Cart cart = cartRepository.findByUserId(userId)
-				.orElseThrow(() -> new CartNotFoundException("Cart not found for user: " + userId));
+				.orElseThrow(CartNotFoundException::new);
 
 		cart.removeItem(productId);
 
@@ -75,7 +75,7 @@ public class CartService {
 	@Transactional
 	public void clearCart(UUID userId) {
 		Cart cart = cartRepository.findByUserId(userId)
-				.orElseThrow(() -> new CartNotFoundException("Cart not found for user: " + userId));
+				.orElseThrow(CartNotFoundException::new);
 
 		cart.clear();
 	}

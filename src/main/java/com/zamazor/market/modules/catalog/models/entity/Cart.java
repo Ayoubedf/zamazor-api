@@ -58,7 +58,7 @@ public class Cart {
 		CartItem existingItem = this.items.stream()
 				.filter(item -> item.getProduct().getId().equals(product.getId()))
 				.findFirst()
-				.orElseThrow(() -> new CartItemNotFoundException("Product not present in cart"));
+				.orElseThrow(CartItemNotFoundException::new);
 
 		existingItem.setQuantity(quantity);
 	}

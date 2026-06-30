@@ -1,7 +1,7 @@
 package com.zamazor.market.modules.product.service;
 
 import com.zamazor.market.modules.product.exception.CategoryNotFoundException;
-import com.zamazor.market.modules.product.models.dto.CategoryAlreadyExistsException;
+import com.zamazor.market.modules.product.exception.CategoryAlreadyExistsException;
 import com.zamazor.market.modules.product.models.dto.CategoryDto;
 import com.zamazor.market.modules.product.models.dto.CategoryRequest;
 import com.zamazor.market.modules.product.models.entity.Category;
@@ -34,7 +34,7 @@ public class CategoryService {
 
 	public CategoryDto update(UUID id, CategoryRequest request) {
 		var category = categoryRepository.findById(id)
-				.orElseThrow(() -> new CategoryNotFoundException("Category with id: " + id + " not found"));
+				.orElseThrow(() -> new CategoryNotFoundException(id));
 
 		if (categoryRepository.existsByLabel(request.label())) {
 			throw new CategoryAlreadyExistsException("Category with label " + request.label() + " already exists");
@@ -46,7 +46,7 @@ public class CategoryService {
 
 	public void delete(UUID id) {
 		if (!categoryRepository.existsById(id)) {
-			throw new CategoryNotFoundException("Category with id: " + id + " not found");
+			throw new CategoryNotFoundException(id);
 		}
 		categoryRepository.deleteById(id);
 	}

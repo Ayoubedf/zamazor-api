@@ -62,14 +62,14 @@ public class OrderService {
 
 	public OrderDto getById(UUID id) {
 		var order = orderRepository.findById(id)
-				.orElseThrow(() -> new OrderNotFoundException("Order with id: " + id + " was not found"));
+				.orElseThrow(() -> new OrderNotFoundException(id));
 		return orderMapper.toDto(order);
 	}
 
 	@Transactional
 	public OrderDto checkout(User user, CheckoutRequest request) {
 		var cart = cartRepository.findByUserId(user.getId())
-				.orElseThrow(() -> new CartNotFoundException("Cart empty or missing"));
+				.orElseThrow(CartNotFoundException::new);
 
 		if (cart.getItems().isEmpty()) {
 			throw new EmptyCartException("Cannot checkout an empty cart");
@@ -102,7 +102,7 @@ public class OrderService {
 	@Transactional(readOnly = true)
 	public String regeneratePaymentLink(UUID orderId) {
 		Order order = orderRepository.findById(orderId)
-				.orElseThrow(() -> new OrderNotFoundException("Order not found"));
+				.orElseThrow(() -> new OrderNotFoundException(orderId));
 
 		if (order.getStatus() != OrderStatus.PENDING) {
 			throw new IllegalStateException("Order is already processed or completed");
@@ -114,7 +114,7 @@ public class OrderService {
 	@Transactional
 	public OrderDto changeStatus(UUID orderId, OrderStatus newStatus) {
 		var order = orderRepository.findById(orderId)
-				.orElseThrow(() -> new OrderNotFoundException("Order not found"));
+				.orElseThrow(() -> new OrderNotFoundException(orderId));
 		var user = userRepository.findById(order.getUser().getId())
 				.orElseThrow(() -> new UsernameNotFoundException("User not found"));
 		LocalDateTime now = LocalDateTime.now(clock);
@@ -136,7 +136,7 @@ public class OrderService {
 	@Transactional
 	public OrderDto cancelOrder(UUID orderId, User user) {
 		var order = orderRepository.findById(orderId)
-				.orElseThrow(() -> new OrderNotFoundException("Order not found"));
+				.orElseThrow(() -> new OrderNotFoundException(orderId));
 
 		if (!user.getIsAdmin() && !order.getUser().getId().equals(user.getId())) {
 			throw new UnauthorizedOrderException("You do not have permission to cancel this order");
@@ -156,7 +156,7 @@ public class OrderService {
 	@Transactional
 	public OrderDto verifyAndCompleteOrder(UUID orderId, String sessionId, User user) {
 		Order order = orderRepository.findById(orderId)
-				.orElseThrow(() -> new OrderNotFoundException("Order not found"));
+				.orElseThrow(() -> new OrderNotFoundException(orderId));
 
 		if (!order.getUser().getId().equals(user.getId()))
 			throw new UnauthorizedOrderException("You do not have permission to modify this order");
