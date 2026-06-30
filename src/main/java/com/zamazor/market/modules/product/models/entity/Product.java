@@ -88,6 +88,7 @@ public class Product {
 			throw new OutOfStockException("Not enough stock for: " + this.name);
 		}
 		this.stockQuantity -= quantity;
+		this.reservedQuantity += quantity;
 	}
 
 	public void restoreStock(Integer quantity) {
@@ -95,5 +96,6 @@ public class Product {
 			throw new IllegalArgumentException("Quantity to restore must be greater than zero");
 		}
 		this.stockQuantity += quantity;
+		this.reservedQuantity -= quantity;
 	}
 }
