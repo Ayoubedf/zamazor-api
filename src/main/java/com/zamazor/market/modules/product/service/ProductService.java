@@ -72,10 +72,10 @@ public class ProductService {
 			Pageable pageable
 	) {
 		Specification<Product> spec = ProductSpecifications.createSpec(query, categoryId, minPrice, maxPrice);
-		Page<ProductDto> productPage = productRepository
-				.findAll(spec, pageable).map(productMapper::toDto);
+		Page<Product> productPage = productRepository
+				.findAll(spec, pageable);
 
-		return new PageResponse<>(productPage);
+		return new PageResponse<>(productPage.map(productMapper::toDto));
 	}
 
 	public ProductDto getById(UUID id) {

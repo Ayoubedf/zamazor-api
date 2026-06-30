@@ -41,7 +41,6 @@ public class OrderController {
 			direction = Sort.Direction.fromString(sort[1]);
 		}
 
-		// Handle property mapping right away
 		if ("totalAmount".equals(sortProperty)) {
 			sortProperty = "total";
 		} else if ("userFullName".equals(sortProperty)) {

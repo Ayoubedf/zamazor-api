@@ -50,11 +50,21 @@ public class ProductController {
 			@RequestParam(required = false) UUID categoryId,
 			@RequestParam(required = false) BigDecimal minPrice,
 			@RequestParam(required = false) BigDecimal maxPrice,
-			@PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+			@RequestParam(value = "sort", defaultValue = "createdAt,desc") String sortParam,
+			Pageable pageable
 	) {
-		return ResponseEntity.ok(productService.search(q, categoryId, minPrice, maxPrice, pageable));
-	}
+		String[] sortParts = sortParam.contains(",") ? sortParam.split(",") : new String[]{sortParam, "desc"};
+		String sortProperty = sortParts[0].trim();
+		Sort.Direction direction = "asc".equalsIgnoreCase(sortParts[1].trim()) ? Sort.Direction.ASC : Sort.Direction.DESC;
 
+		Pageable sortedPageable = PageRequest.of(
+				pageable.getPageNumber(),
+				pageable.getPageSize(),
+				Sort.by(direction, sortProperty)
+		);
+
+		return ResponseEntity.ok(productService.search(q, categoryId, minPrice, maxPrice, sortedPageable));
+	}
 
 	@GetMapping("/category/{categoryId}")
 	public ResponseEntity<PageResponse<ProductDto>> getByCategory(
