@@ -13,11 +13,8 @@ import com.zamazor.market.payment.exception.PaymentGatewayException;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.security.SignatureException;
 import org.jspecify.annotations.NonNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -38,78 +35,38 @@ import java.util.stream.Collectors;
 @ControllerAdvice
 public class ExceptionResolver extends ResponseEntityExceptionHandler {
 
-	private static final Logger log = LoggerFactory.getLogger(ExceptionResolver.class);
-
-	@ExceptionHandler({
-			ProductNotFoundException.class,
-			CategoryNotFoundException.class,
-			CartNotFoundException.class,
-			OrderNotFoundException.class,
-			AddressNotFoundException.class
-	})
-	public ProblemDetail handleNotFoundExceptions(RuntimeException ex) {
-		return createProblemDetail(HttpStatus.NOT_FOUND, "Resource Not Found", ex.getMessage());
-	}
-
-	@ExceptionHandler({
-			EmailAlreadyExistsException.class,
-			CategoryAlreadyExistsException.class,
-			OrderCancellationException.class,
-			OrderRefundException.class,
-			OutOfStockException.class
-	})
-	public ProblemDetail handleConflictExceptions(RuntimeException ex) {
-		return createProblemDetail(HttpStatus.CONFLICT, "Business Rule Conflict", ex.getMessage());
-	}
-
-	@ExceptionHandler(EmptyCartException.class)
-	public ProblemDetail handleBadRequestExceptions(RuntimeException ex) {
-		return createProblemDetail(HttpStatus.BAD_REQUEST, "Invalid Operation", ex.getMessage());
-	}
-
-	@ExceptionHandler({BadCredentialsException.class, UnauthorizedException.class})
-	public ProblemDetail handleAuthentication(Exception ex) {
-		return createProblemDetail(HttpStatus.UNAUTHORIZED, "Authentication Failed", ex.getMessage());
-	}
-
-	@ExceptionHandler({
-			AccessDeniedException.class,
-			AccountStatusException.class,
-			SignatureException.class,
-			ExpiredJwtException.class,
-			UnauthorizedOrderException.class
-	})
-	public ProblemDetail handleAuthorization(Exception ex) {
-		return createProblemDetail(HttpStatus.FORBIDDEN, "Access Denied", ex.getMessage());
-	}
-
-	@ExceptionHandler(PaymentGatewayException.class)
-	public ProblemDetail handlePaymentGateway(PaymentGatewayException ex) {
-		log.error("Payment Gateway Failure: ", ex);
-		return createProblemDetail(HttpStatus.BAD_GATEWAY, "Payment Gateway Error", "Unable to process payment at this time.");
-	}
-
-	@ExceptionHandler(MediaStorageException.class)
-	public ProblemDetail handleMediaStorage(MediaStorageException ex) {
-		log.error("Media Storage Failure: ", ex);
-		return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Storage Error", "Failed to process media asset.");
-	}
-
 	@ExceptionHandler(Exception.class)
-	public ProblemDetail handleGenericException(Exception ex) {
-		log.error("Unhandled exception encountered: ", ex);
-
-		return createProblemDetail(
-				HttpStatus.INTERNAL_SERVER_ERROR,
-				"Internal Server Error",
-				"An unexpected error occurred. Please contact support if the problem persists."
-		);
+	public ProblemDetail handleSecurityException(Exception exception) {
+		return switch (exception) {
+			case BadCredentialsException e -> createProblemDetail(401, e.getMessage(), "Invalid Credentials");
+			case AccountStatusException e -> createProblemDetail(403, e.getMessage(), "Account Locked");
+			case AccessDeniedException e -> createProblemDetail(403, e.getMessage(), "Unauthorized to access this resource");
+			case SignatureException e -> createProblemDetail(403, e.getMessage(), "Invalid JWT Signature");
+			case ExpiredJwtException e -> createProblemDetail(403, e.getMessage(), "JWT token has expired");
+			case EmailAlreadyExistsException e -> createProblemDetail(409, e.getMessage(), "Email already exists");
+			case UnauthorizedException e -> createProblemDetail(401, e.getMessage(), "Authentication Required");
+			case ProductNotFoundException e -> createProblemDetail(404, e.getMessage(), "Product Not Found");
+			case CategoryNotFoundException e -> createProblemDetail(404, e.getMessage(), "Category Not Found");
+			case CategoryAlreadyExistsException e -> createProblemDetail(409, e.getMessage(), "Category Already Exists");
+			case MediaStorageException e ->
+					createProblemDetail(500, e.getMessage(), "Media storage service failed to process asset");
+			case CartNotFoundException e -> createProblemDetail(404, e.getMessage(), "Cart Not Found");
+			case OrderNotFoundException e -> createProblemDetail(404, e.getMessage(), "Order Not Found");
+			case OrderCancellationException e -> createProblemDetail(409, e.getMessage(), "Order Cancellation Failed");
+			case OrderRefundException e -> createProblemDetail(409, e.getMessage(), "Order Refund Failed");
+			case EmptyCartException e -> createProblemDetail(400, e.getMessage(), "Cart is Empty");
+			case OutOfStockException e -> createProblemDetail(409, e.getMessage(), "Insufficient Product Stock");
+			case AddressNotFoundException e -> createProblemDetail(404, e.getMessage(), "Address Not Found");
+			case UnauthorizedOrderException e -> createProblemDetail(403, e.getMessage(), "Unauthorized To Modify Order");
+			case PaymentGatewayException e -> createProblemDetail(502, e.getMessage(), "Payment Gateway Error");
+			default -> createProblemDetail(500, exception.getMessage(), "Unknown internal server error");
+		};
 	}
 
-	private ProblemDetail createProblemDetail(HttpStatus status, String title, String detail) {
-		ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(status, detail);
-		problemDetail.setTitle(title);
-		return problemDetail;
+	private ProblemDetail createProblemDetail(int status, String message, String description) {
+		ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(status), message);
+		detail.setProperty("description", description);
+		return detail;
 	}
 
 	@Override
@@ -135,7 +92,8 @@ public class ExceptionResolver extends ResponseEntityExceptionHandler {
 				"One or more fields failed validation checks."
 		);
 		body.setTitle("Validation Failed");
-		body.setProperty("invalid_params", fieldErrors);
+		body.setProperty("description", "One or more fields failed validation checks.");
+		body.setProperty("fields", fieldErrors);
 
 		return createResponseEntity(body, headers, status, request);
 	}
