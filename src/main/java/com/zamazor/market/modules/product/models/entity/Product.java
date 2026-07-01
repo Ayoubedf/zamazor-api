@@ -9,7 +9,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -68,20 +68,10 @@ public class Product {
 	private Long version = 0L;
 
 	@CreatedDate
-	private LocalDateTime createdAt;
+	private Instant createdAt;
 
 	@LastModifiedDate
-	private LocalDateTime modifiedAt;
-
-	@PrePersist
-	public void prePersist() {
-		this.modifiedAt = LocalDateTime.now();
-	}
-
-	@PreUpdate
-	public void preUpdate() {
-		this.modifiedAt = LocalDateTime.now();
-	}
+	private Instant modifiedAt;
 
 	public void deductStock(int quantity) {
 		if (this.stockQuantity < quantity) {

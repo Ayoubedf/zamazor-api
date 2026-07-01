@@ -14,6 +14,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,7 +55,7 @@ public class Order {
 	private AddressComponent shippingAddressSnapshot;
 
 	@CreatedDate
-	private LocalDateTime createdAt;
+	private Instant createdAt;
 
 	public void addOrderItem(OrderItem orderItem) {
 		this.items.add(orderItem);
@@ -94,7 +95,7 @@ public class Order {
 		if (this.status == OrderStatus.DELIVERED || this.status == OrderStatus.REFUNDED) {
 			throw new OrderCancellationException("Cannot cancel an order that is already delivered or refunded.");
 		}
-		if (this.createdAt.isBefore(now.minusDays(2))) {
+		if (this.createdAt.isBefore(Instant.from(now.minusDays(2)))) {
 			throw new OrderCancellationException("Order cancellation window (2 days) has expired.");
 		}
 
@@ -109,7 +110,7 @@ public class Order {
 		if (this.status != OrderStatus.DELIVERED) {
 			throw new OrderRefundException("Only completed or delivered orders can be refunded.");
 		}
-		if (this.createdAt.isBefore(now.minusDays(30))) {
+		if (this.createdAt.isBefore(Instant.from(now.minusDays(2)))) {
 			throw new OrderRefundException("Order exceeds the 30-day refund policy window.");
 		}
 

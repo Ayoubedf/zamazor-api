@@ -1,22 +1,19 @@
-package com.zamazor.market.modules.catalog.models.dto;
+package com.zamazor.market.modules.dashboard.models.dto;
 
 import com.zamazor.market.modules.catalog.models.entity.OrderStatus;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
-public record OrderDto(
+public record RecentOrderDto(
 		UUID id,
-		OrderStatus status,
 		BigDecimal total,
-		List<OrderItemDto> items,
+		OrderStatus status,
 		String shippingCountry,
 		String shippingCity,
 		String shippingStreet,
 		String phone,
-		UserMinDto user,
 		Instant createdAt
 ) {
 }
