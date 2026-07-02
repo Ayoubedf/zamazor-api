@@ -7,6 +7,7 @@ import com.zamazor.market.modules.catalog.repository.OrderRepository;
 import com.zamazor.market.modules.dashboard.models.dto.*;
 import com.zamazor.market.modules.dashboard.models.mapper.DashboardMapper;
 import com.zamazor.market.modules.product.models.entity.Product;
+import com.zamazor.market.modules.product.repository.CategoryRepository;
 import com.zamazor.market.modules.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ public class DashboardService {
 			OrderStatus.PAID,
 			OrderStatus.DELIVERED
 	);
+	private final CategoryRepository categoryRepository;
 
 	public DashboardOverviewDto getDashboardOverview() {
 		List<Order> allOrders = orderRepository.findAll();
@@ -90,6 +92,12 @@ public class DashboardService {
 				categorySummary,
 				topProducts
 		);
+	}
+
+	@Transactional(readOnly = true)
+	public List<CategoryAnalyticsDto> getCategoriesWithCounts() {
+		var projections = categoryRepository.findAllWithProductCounts();
+		return dashboardMapper.toAnalyticsDtoList(projections);
 	}
 
 	private List<TopProductDto> aggregateTopProducts(List<Order> settledOrders, List<Product> products) {

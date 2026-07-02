@@ -1,5 +1,6 @@
 package com.zamazor.market.modules.dashboard.controller;
 
+import com.zamazor.market.modules.dashboard.models.dto.CategoryAnalyticsDto;
 import com.zamazor.market.modules.dashboard.models.dto.DashboardOverviewDto;
 import com.zamazor.market.modules.dashboard.service.DashboardService;
 import lombok.RequiredArgsConstructor;
@@ -7,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/dashboard")
@@ -17,5 +20,10 @@ public class DashboardController {
 	@GetMapping("/overview")
 	public ResponseEntity<DashboardOverviewDto> getOverview() {
 		return ResponseEntity.ok(dashboardService.getDashboardOverview());
+	}
+
+	@GetMapping("/category")
+	public ResponseEntity<List<CategoryAnalyticsDto>> getCategory() {
+		return ResponseEntity.ok(dashboardService.getCategoriesWithCounts());
 	}
 }

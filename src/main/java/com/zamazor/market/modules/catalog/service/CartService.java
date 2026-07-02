@@ -1,10 +1,12 @@
 package com.zamazor.market.modules.catalog.service;
 
+import com.zamazor.market.modules.catalog.exception.CartItemNotFoundException;
 import com.zamazor.market.modules.catalog.exception.CartNotFoundException;
 import com.zamazor.market.modules.catalog.models.dto.AddToCartRequest;
 import com.zamazor.market.modules.catalog.models.dto.CartDto;
 import com.zamazor.market.modules.catalog.models.entity.Cart;
 import com.zamazor.market.modules.catalog.models.mapper.CartMapper;
+import com.zamazor.market.modules.catalog.repository.CartItemRepository;
 import com.zamazor.market.modules.catalog.repository.CartRepository;
 import com.zamazor.market.modules.product.exception.ProductNotFoundException;
 import com.zamazor.market.modules.product.repository.ProductRepository;
@@ -24,6 +26,7 @@ public class CartService {
 	private final ProductRepository productRepository;
 	private final CartMapper cartMapper;
 	private final UserRepository userRepository;
+	private final CartItemRepository cartItemRepository;
 
 	public CartDto getCartByUserId(UUID userId) {
 		return cartRepository.findByUserId(userId)
@@ -66,6 +69,9 @@ public class CartService {
 	public CartDto removeItem(UUID userId, UUID productId) {
 		Cart cart = cartRepository.findByUserId(userId)
 				.orElseThrow(CartNotFoundException::new);
+		if (!cartItemRepository.existsByCartIdAndProductId(cart.getId(), productId)) {
+			throw new CartItemNotFoundException();
+		}
 
 		cart.removeItem(productId);
 

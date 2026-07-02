@@ -55,6 +55,7 @@ public class ExceptionResolver extends ResponseEntityExceptionHandler {
 			case OrderCancellationException e -> createProblemDetail(409, e.getMessage(), "Order Cancellation Failed");
 			case OrderRefundException e -> createProblemDetail(409, e.getMessage(), "Order Refund Failed");
 			case EmptyCartException e -> createProblemDetail(400, e.getMessage(), "Cart is Empty");
+			case CartItemNotFoundException e -> createProblemDetail(404, e.getMessage(), "Cart Item Not Found");
 			case OutOfStockException e -> createProblemDetail(409, e.getMessage(), "Insufficient Product Stock");
 			case AddressNotFoundException e -> createProblemDetail(404, e.getMessage(), "Address Not Found");
 			case UnauthorizedOrderException e -> createProblemDetail(403, e.getMessage(), "Unauthorized To Modify Order");
