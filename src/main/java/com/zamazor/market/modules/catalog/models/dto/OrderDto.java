@@ -10,6 +10,10 @@ import java.util.UUID;
 public record OrderDto(
 		UUID id,
 		OrderStatus status,
+		BigDecimal subtotal,
+		BigDecimal shippingCost,
+		BigDecimal discount,
+		BigDecimal tax,
 		BigDecimal total,
 		List<OrderItemDto> items,
 		String shippingCountry,

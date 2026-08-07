@@ -4,6 +4,7 @@ import com.zamazor.market.config.ApplicationProperties;
 import com.zamazor.market.mail.event.OrderPlacedEvent;
 import com.zamazor.market.mail.event.OrderStatusChangedEvent;
 import com.zamazor.market.mail.service.EmailService;
+import com.zamazor.market.modules.catalog.models.entity.Order;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -28,21 +29,11 @@ public class OrderEmailListener {
 		var order = event.order();
 		var user = event.user();
 
-		Map<String, Object> mailVariables = Map.of(
-				"appName", application.name(),
-				"paymentUrl", application.backendUrl() + "orders/checkout/" + order.getId() + "/pay",
-				"orderId", order.getId(),
-				"items", order.getItems().stream(),
-				"totalAmount", "MAD " + order.getTotal().toPlainString(),
-				"supportEmail", application.supportEmail(),
-				"year", Year.now().getValue()
-		);
-
 		emailService.sendHtmlEmail(
 				user.getEmail(),
 				"Action Required: Complete your order #" + order.getId(),
 				"checkout-success",
-				mailVariables
+				buildCheckoutEmailVariables(order)
 		);
 	}
 
@@ -61,7 +52,7 @@ public class OrderEmailListener {
 		);
 
 		Map<String, Object> paidModel = new HashMap<>(baseModel);
-		paidModel.put("items", order.getItems().stream());
+		paidModel.put("items", order.getItems());
 		paidModel.put("totalAmount", order.getTotal() + "MAD");
 
 		switch (event.status()) {
@@ -85,5 +76,18 @@ public class OrderEmailListener {
 			);
 			default -> log.debug("No notification email needed for order status: {}", event.status());
 		}
+	}
+
+	private Map<String, Object> buildCheckoutEmailVariables(Order order) {
+		return Map.of(
+				"appName", application.name(),
+				"paymentUrl", "%s/orders/%s/pay"
+						.formatted(application.backendUrl(), order.getId()),
+				"orderId", order.getId(),
+				"items", order.getItems().stream().toList(),
+				"totalAmount", "MAD %s".formatted(order.getTotal()),
+				"supportEmail", application.supportEmail(),
+				"year", Year.now().getValue()
+		);
 	}
 }

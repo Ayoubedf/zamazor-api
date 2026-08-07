@@ -52,6 +52,6 @@ public class ApplicationConfiguration {
 
 	@Bean
 	public SortHandlerMethodArgumentResolverCustomizer sortCustomizer() {
-		return resolver -> resolver.setPropertyDelimiter(".");
+		return resolver -> resolver.setPropertyDelimiter(",");
 	}
 }

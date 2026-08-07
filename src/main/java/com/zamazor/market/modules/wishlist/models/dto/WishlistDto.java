@@ -1,13 +1,8 @@
 package com.zamazor.market.modules.wishlist.models.dto;
 
-import com.zamazor.market.modules.product.models.dto.ProductDto;
-
-import java.time.Instant;
-import java.util.UUID;
+import java.util.List;
 
 public record WishlistDto(
-		UUID id,
-		ProductDto product,
-		Instant createdAt
+		List<WishlistItemDto> items
 ) {
 }

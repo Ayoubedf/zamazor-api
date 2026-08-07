@@ -17,6 +17,7 @@ public interface DashboardMapper {
 	@Mapping(source = "shippingAddressSnapshot.city", target = "shippingCity")
 	@Mapping(source = "shippingAddressSnapshot.street", target = "shippingStreet")
 	@Mapping(source = "shippingAddressSnapshot.phone", target = "phone")
+	@Mapping(target = "shippingCost", source = "shippingCost")
 	RecentOrderDto toRecentOrderDto(Order order);
 
 	@Mapping(target = "stockQuantity", source = "stockQuantity")

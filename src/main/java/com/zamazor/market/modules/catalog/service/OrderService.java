@@ -1,18 +1,18 @@
 package com.zamazor.market.modules.catalog.service;
 
+import com.stripe.model.checkout.Session;
 import com.zamazor.market.mail.event.OrderPlacedEvent;
 import com.zamazor.market.mail.event.OrderStatusChangedEvent;
-import com.zamazor.market.modules.catalog.models.dto.AddressRequest;
-import com.zamazor.market.modules.catalog.models.dto.StockRestoreDto;
+import com.zamazor.market.modules.catalog.models.dto.*;
 import com.zamazor.market.modules.catalog.models.entity.AddressComponent;
+import com.zamazor.market.modules.catalog.models.mapper.PaymentMapper;
 import com.zamazor.market.modules.product.repository.ProductRepository;
+import com.zamazor.market.modules.user.exception.UserNotFoundException;
 import com.zamazor.market.modules.user.repository.UserRepository;
 import com.zamazor.market.payment.exception.PaymentGatewayException;
 import com.zamazor.market.payment.service.PaymentService;
 import com.zamazor.market.shared.api.PageResponse;
 import com.zamazor.market.modules.catalog.exception.*;
-import com.zamazor.market.modules.catalog.models.dto.CheckoutRequest;
-import com.zamazor.market.modules.catalog.models.dto.OrderDto;
 import com.zamazor.market.modules.catalog.models.entity.Order;
 import com.zamazor.market.modules.catalog.models.entity.OrderStatus;
 import com.zamazor.market.modules.catalog.models.mapper.OrderMapper;
@@ -20,12 +20,13 @@ import com.zamazor.market.modules.catalog.repository.CartRepository;
 import com.zamazor.market.modules.catalog.repository.OrderRepository;
 import com.zamazor.market.modules.catalog.specification.OrderSpecifications;
 import com.zamazor.market.modules.user.models.entity.User;
+import com.zamazor.market.shared.model.dto.PricingInfo;
+import com.zamazor.market.shared.service.PricingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +48,8 @@ public class OrderService {
 	private final ApplicationEventPublisher eventPublisher;
 	private final UserRepository userRepository;
 	private final PaymentService paymentService;
+	private final PaymentMapper paymentMapper;
+	private final PricingService pricingService;
 
 	public PageResponse<OrderDto> getAll(String userFullName, OrderStatus status, Pageable pageable) {
 		Specification<Order> spec = OrderSpecifications.createSpec(userFullName, status);
@@ -75,7 +78,8 @@ public class OrderService {
 			throw new EmptyCartException("Cannot checkout an empty cart");
 		}
 
-		var order = Order.createFromCart(cart);
+		PricingInfo pricing = pricingService.calculate(cart, user);
+		var order = Order.createFromCart(cart, pricing);
 		var snapshot = new AddressComponent(
 				request.country(),
 				request.city(),
@@ -93,22 +97,23 @@ public class OrderService {
 		cart.clear();
 		cartRepository.saveAndFlush(cart);
 
-		String paymentUrl = paymentService.createCheckoutSession(savedOrder);
+		String paymentUrl = paymentService.createCheckoutSession(savedOrder).getUrl();
 		eventPublisher.publishEvent(new OrderPlacedEvent(savedOrder, user, paymentUrl));
 
 		return orderMapper.toDto(savedOrder);
 	}
 
-	@Transactional(readOnly = true)
-	public String regeneratePaymentLink(UUID orderId) {
-		Order order = orderRepository.findById(orderId)
+	public PaymentSessionResponse regeneratePaymentLink(UUID orderId) {
+		var order = orderRepository.findById(orderId)
 				.orElseThrow(() -> new OrderNotFoundException(orderId));
 
+		//  Order is already processed or completed
 		if (order.getStatus() != OrderStatus.PENDING) {
-			throw new IllegalStateException("Order is already processed or completed");
+			throw new IllegalOrderStateException("Order Already Processed or completed");
 		}
 
-		return paymentService.createCheckoutSession(order);
+		Session session = paymentService.createCheckoutSession(order);
+		return paymentMapper.toDto(session);
 	}
 
 	@Transactional
@@ -116,7 +121,7 @@ public class OrderService {
 		var order = orderRepository.findById(orderId)
 				.orElseThrow(() -> new OrderNotFoundException(orderId));
 		var user = userRepository.findById(order.getUser().getId())
-				.orElseThrow(() -> new UsernameNotFoundException("User not found"));
+				.orElseThrow(() -> new UserNotFoundException(order.getUser().getId()));
 		LocalDateTime now = LocalDateTime.now(clock);
 
 		if (order.getStatus() == newStatus) return orderMapper.toDto(order);
@@ -155,7 +160,7 @@ public class OrderService {
 
 	@Transactional
 	public OrderDto verifyAndCompleteOrder(UUID orderId, String sessionId, User user) {
-		Order order = orderRepository.findById(orderId)
+		var order = orderRepository.findById(orderId)
 				.orElseThrow(() -> new OrderNotFoundException(orderId));
 
 		if (!order.getUser().getId().equals(user.getId()))

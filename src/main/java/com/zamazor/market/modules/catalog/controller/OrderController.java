@@ -1,5 +1,6 @@
 package com.zamazor.market.modules.catalog.controller;
 
+import com.zamazor.market.modules.catalog.models.dto.PaymentSessionResponse;
 import com.zamazor.market.modules.catalog.models.dto.UpdateStatusRequest;
 import com.zamazor.market.shared.api.PageResponse;
 import com.zamazor.market.modules.catalog.models.dto.CheckoutRequest;
@@ -17,7 +18,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -75,12 +75,11 @@ public class OrderController {
 	}
 
 	@GetMapping("/checkout/{orderId}/pay")
-	public ResponseEntity<Map<String, String>> payOrder(@PathVariable UUID orderId) {
-		String paymentUrl = orderService.regeneratePaymentLink(orderId);
-		return ResponseEntity.ok(Map.of("url", paymentUrl));
+	public ResponseEntity<PaymentSessionResponse> payOrder(@PathVariable UUID orderId) {
+		return ResponseEntity.ok(orderService.regeneratePaymentLink(orderId));
 	}
 
-	@GetMapping("/checkout/{orderId}/verify")
+	@PostMapping("/checkout/{orderId}/verify")
 	public ResponseEntity<OrderDto> verifyPaymentStatus(
 			@PathVariable UUID orderId,
 			@RequestParam("sessionId") String sessionId,

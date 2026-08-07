@@ -9,7 +9,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
@@ -36,7 +36,7 @@ cloudinary:
 application:
   name: "zamazor"
   frontend-url: ${FRONTEND_URL:http://localhost:5173}
-  backend-url: ${FRONTEND_URL:http://localhost:8080}
+  backend-url: ${BACKEND_URL:http://localhost:8080}
   security:
     jwt:
       refresh:

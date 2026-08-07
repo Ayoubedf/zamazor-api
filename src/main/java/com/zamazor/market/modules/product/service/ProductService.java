@@ -2,7 +2,6 @@ package com.zamazor.market.modules.product.service;
 
 import com.zamazor.market.modules.product.exception.CategoryNotFoundException;
 import com.zamazor.market.modules.product.exception.ProductNotFoundException;
-import com.zamazor.market.modules.catalog.repository.CartItemRepository;
 import com.zamazor.market.shared.api.PageResponse;
 import com.zamazor.market.media.model.StoredMediaMetadata;
 import com.zamazor.market.media.ports.MediaStoragePort;
@@ -15,7 +14,6 @@ import com.zamazor.market.modules.product.repository.CategoryRepository;
 import com.zamazor.market.modules.product.repository.ProductRepository;
 import com.zamazor.market.modules.product.repository.StoreRepository;
 import com.zamazor.market.modules.product.specification.ProductSpecifications;
-import com.zamazor.market.modules.wishlist.repository.WishlistRepository;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
@@ -27,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -36,8 +35,6 @@ public class ProductService {
 	private final ProductRepository productRepository;
 	private final CategoryRepository categoryRepository;
 	private final StoreRepository storeRepository;
-	private final CartItemRepository cartItemRepository;
-	private final WishlistRepository wishlistRepository;
 	private final ProductMapper productMapper;
 	private final MediaStoragePort mediaStorage;
 
@@ -82,6 +79,13 @@ public class ProductService {
 		return new PageResponse<>(productPage);
 	}
 
+	public PageResponse<ProductDto> bulk(List<UUID> productIds, Pageable pageable) {
+		Page<ProductDto> productPage = productRepository.findByIdIn(productIds, pageable)
+				.map(productMapper::toDto);
+
+		return new PageResponse<>(productPage);
+	}
+
 	public ProductDto getById(UUID id) {
 		return productRepository.findById(id)
 				.map(productMapper::toDto)
@@ -111,13 +115,9 @@ public class ProductService {
 
 	@Transactional
 	public void delete(UUID id) {
-		var product = productRepository.findById(id)
-				.orElseThrow(() -> new ProductNotFoundException(id));
-
-		wishlistRepository.deleteByProductId(id);
-		cartItemRepository.deleteByProductId(id);
-		productRepository.delete(product);
-		productRepository.flush();
-		mediaStorage.delete(product.getImagePublicId());
+		if (!productRepository.existsById(id)) {
+			throw new ProductNotFoundException(id);
+		}
+		productRepository.deleteById(id);
 	}
 }

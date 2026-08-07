@@ -57,8 +57,8 @@ public class AuthenticationService {
 			throw new BadCredentialsException("Invalid Credentials");
 		}
 		var userDto = userMapper.toDto(user);
-		var accessToken = jwtService.generateAccessToken(user);
-		var refreshToken = jwtService.generateRefreshToken(user);
+		String accessToken = jwtService.generateAccessToken(user);
+		String refreshToken = jwtService.generateRefreshToken(user);
 
 		return new AuthenticationResult(refreshToken, accessToken, userDto);
 	}
@@ -70,7 +70,7 @@ public class AuthenticationService {
 
 		try {
 			String email = jwtService.extractRefreshUsername(refreshToken);
-			User user = userRepository.findByEmail(email)
+			var user = userRepository.findByEmail(email)
 					.orElseThrow(() -> new UnauthorizedException("User not found"));
 
 			if (!jwtService.isRefreshTokenValid(refreshToken, user)) {

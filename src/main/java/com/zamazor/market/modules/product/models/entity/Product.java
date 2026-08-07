@@ -64,7 +64,6 @@ public class Product {
 
 	@Version
 	@Builder.Default
-	@Column(name = "version", nullable = false)
 	private Long version = 0L;
 
 	@CreatedDate

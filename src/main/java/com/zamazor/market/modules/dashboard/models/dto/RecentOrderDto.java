@@ -8,8 +8,12 @@ import java.util.UUID;
 
 public record RecentOrderDto(
 		UUID id,
-		BigDecimal total,
 		OrderStatus status,
+		BigDecimal subtotal,
+		BigDecimal shippingCost,
+		BigDecimal discount,
+		BigDecimal tax,
+		BigDecimal total,
 		String shippingCountry,
 		String shippingCity,
 		String shippingStreet,

@@ -4,8 +4,8 @@ import com.zamazor.market.modules.catalog.exception.IllegalOrderStateException;
 import com.zamazor.market.modules.catalog.models.dto.StockRestoreDto;
 import com.zamazor.market.modules.product.exception.OrderCancellationException;
 import com.zamazor.market.modules.product.exception.OrderRefundException;
-import com.zamazor.market.modules.product.models.entity.Product;
 import com.zamazor.market.modules.user.models.entity.User;
+import com.zamazor.market.shared.model.dto.PricingInfo;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -36,7 +36,19 @@ public class Order {
 	private OrderStatus status;
 
 	@Column(nullable = false)
-	private BigDecimal total = BigDecimal.ZERO;
+	private BigDecimal subtotal;
+
+	@Column(nullable = false)
+	private BigDecimal tax = BigDecimal.ZERO;
+
+	@Column(nullable = false)
+	private BigDecimal shippingCost;
+
+	@Column(nullable = false)
+	private BigDecimal discount;
+
+	@Column(nullable = false)
+	private BigDecimal total;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "user_id", nullable = false)
@@ -63,30 +75,30 @@ public class Order {
 		orderItem.setOrder(this);
 	}
 
-	public static Order createFromCart(Cart cart) {
-		Order order = new Order();
+	public static Order createFromCart(Cart cart, PricingInfo pricing) {
+		var order = new Order();
 		order.setUser(cart.getUser());
 		order.setStatus(OrderStatus.PENDING);
+		order.setSubtotal(pricing.subtotal());
+		order.setDiscount(pricing.discount());
+		order.setTax(pricing.tax());
+		order.setShippingCost(pricing.shipping());
+		order.setTotal(pricing.total());
 
-		BigDecimal calculatedTotal = BigDecimal.ZERO;
-		for (CartItem cartItem : cart.getItems()) {
-			Product product = cartItem.getProduct();
-			product.deductStock(cartItem.getQuantity());
+		for (CartItem item : cart.getItems()) {
+			var product = item.getProduct();
+			product.deductStock(item.getQuantity());
 
-			OrderItem orderItem = new OrderItem();
-			orderItem.setOrder(order);
-			orderItem.setProductId(product.getId());
-			orderItem.setProductName(product.getName());
-			orderItem.setProductImageUrl(product.getImageUrl());
-			orderItem.setUnitPrice(product.getPrice());
-			orderItem.setQuantity(cartItem.getQuantity());
+			var newItem = new OrderItem();
+			newItem.setOrder(order);
+			newItem.setProductId(product.getId());
+			newItem.setProductName(product.getName());
+			newItem.setProductImageUrl(product.getImageUrl());
+			newItem.setUnitPrice(product.getPrice());
+			newItem.setQuantity(item.getQuantity());
 
-			order.addOrderItem(orderItem);
-
-			BigDecimal itemTotal = product.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()));
-			calculatedTotal = calculatedTotal.add(itemTotal);
+			order.addOrderItem(newItem);
 		}
-		order.setTotal(calculatedTotal);
 
 		return order;
 	}

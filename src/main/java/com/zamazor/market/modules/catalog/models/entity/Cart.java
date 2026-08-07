@@ -2,17 +2,15 @@ package com.zamazor.market.modules.catalog.models.entity;
 
 import com.zamazor.market.modules.catalog.exception.CartItemNotFoundException;
 import com.zamazor.market.modules.catalog.exception.OutOfStockException;
+import com.zamazor.market.modules.catalog.models.dto.GuestCartItemDto;
 import com.zamazor.market.modules.product.models.entity.Product;
 import com.zamazor.market.modules.user.models.entity.User;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.BatchSize;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Getter
 @Setter
@@ -29,6 +27,36 @@ public class Cart {
 	@OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
 	@BatchSize(size = 50)
 	private List<CartItem> items = new ArrayList<>();
+
+	@Version
+	private Long version = 0L;
+
+	public void mergeGuestCart(List<GuestCartItemDto> guestItems, Map<UUID, Product> productMap) {
+		for (GuestCartItemDto guestItem : guestItems) {
+			Product product = productMap.get(guestItem.productId());
+
+			if (product == null || product.getStockQuantity() <= 0) continue;
+
+			Optional<CartItem> existingItemOpt = this.items.stream()
+					.filter(item -> item.getProduct().getId().equals(product.getId()))
+					.findFirst();
+
+			if (existingItemOpt.isPresent()) {
+				CartItem existingItem = existingItemOpt.get();
+				int targetQuantity = Math.min(existingItem.getQuantity() + guestItem.quantity(), product.getStockQuantity());
+				existingItem.setQuantity(targetQuantity);
+			} else {
+				int targetQuantity = Math.min(guestItem.quantity(), product.getStockQuantity());
+				if (targetQuantity > 0) {
+					CartItem newItem = new CartItem();
+					newItem.setCart(this);
+					newItem.setProduct(product);
+					newItem.setQuantity(targetQuantity);
+					this.items.add(newItem);
+				}
+			}
+		}
+	}
 
 	public void addProduct(Product product, int quantity) {
 		if (product.getStockQuantity() < quantity) {
@@ -71,8 +99,8 @@ public class Cart {
 		this.items.clear();
 	}
 
-	public BigDecimal getTotal() {
-		return items.stream()
+	public BigDecimal getSubtotal() {
+		return this.items.stream()
 				.map(CartItem::getLineTotal)
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
 	}

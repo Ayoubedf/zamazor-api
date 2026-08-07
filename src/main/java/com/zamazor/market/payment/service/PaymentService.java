@@ -9,6 +9,7 @@ import com.zamazor.market.payment.exception.PaymentGatewayException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Slf4j
 @Service
@@ -16,11 +17,24 @@ import org.springframework.stereotype.Service;
 public class PaymentService {
 	private final ApplicationProperties application;
 
-	public String createCheckoutSession(Order order) {
+	public Session createCheckoutSession(Order order) {
+		String successUrl = UriComponentsBuilder
+				.fromUriString(application.frontendUrl())
+				.pathSegment("checkout", "orders", order.getId().toString(), "success")
+				.queryParam("sessionId", "{CHECKOUT_SESSION_ID}")
+				.build(false)
+				.toUriString();
+
+		String cancelUrl = UriComponentsBuilder
+				.fromUriString(application.frontendUrl())
+				.pathSegment("checkout", "orders", order.getId().toString(), "cancel")
+				.build()
+				.toUriString();
+
 		SessionCreateParams.Builder sessionBuilder = SessionCreateParams.builder()
 				.setMode(SessionCreateParams.Mode.PAYMENT)
-				.setSuccessUrl(application.frontendUrl() + "/orders/checkout/success?orderId=" + order.getId() + "&sessionId={CHECKOUT_SESSION_ID}")
-				.setCancelUrl(application.frontendUrl() + "/orders/checkout/cancel?orderId=" + order.getId())
+				.setSuccessUrl(successUrl)
+				.setCancelUrl(cancelUrl)
 				.setCustomerEmail(order.getUser().getEmail())
 				.setClientReferenceId(order.getId().toString());
 
@@ -46,7 +60,7 @@ public class PaymentService {
 		try {
 			Session session = Session.create(params);
 			log.info("Successfully created Stripe checkout session for order: {}", order.getId());
-			return session.getUrl();
+			return session;
 		} catch (StripeException e) {
 			log.error("Stripe API communication failure for order ID: {}. Error: {}", order.getId(), e.getMessage(), e);
 			throw new PaymentGatewayException("Could not initiate payment gateway session. Please try again later.");

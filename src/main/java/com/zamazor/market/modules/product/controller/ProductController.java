@@ -1,5 +1,6 @@
 package com.zamazor.market.modules.product.controller;
 
+import com.zamazor.market.modules.product.models.dto.BulkProductRequest;
 import com.zamazor.market.shared.api.PageResponse;
 import com.zamazor.market.modules.product.models.dto.CreateProductRequest;
 import com.zamazor.market.modules.product.models.dto.ProductDto;
@@ -42,6 +43,16 @@ public class ProductController {
 	@GetMapping("/{id}")
 	public ResponseEntity<ProductDto> getById(@PathVariable UUID id) {
 		return ResponseEntity.ok(productService.getById(id));
+	}
+
+	@PostMapping("/bulk")
+	public ResponseEntity<PageResponse<ProductDto>> getAllByIds(
+			@Valid @RequestBody BulkProductRequest request,
+			@RequestParam(defaultValue = "0") Integer page,
+			@RequestParam(defaultValue = "10") Integer size
+	) {
+		Pageable pageable = PageRequest.of(page, size);
+		return ResponseEntity.ok(productService.bulk(request.ids(), pageable));
 	}
 
 	@GetMapping
@@ -92,7 +103,7 @@ public class ProductController {
 	public ResponseEntity<ProductDto> update(
 			@PathVariable UUID id,
 			@Valid @ModelAttribute UpdateProductRequest request,
-			@RequestPart MultipartFile image
+			@RequestPart(required = false) MultipartFile image
 	) throws IOException {
 		return ResponseEntity.ok(productService.update(id, request, image));
 	}

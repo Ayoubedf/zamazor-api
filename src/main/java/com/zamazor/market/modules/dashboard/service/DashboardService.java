@@ -25,6 +25,7 @@ public class DashboardService {
 	private final OrderRepository orderRepository;
 	private final ProductRepository productRepository;
 	private final DashboardMapper dashboardMapper;
+	private static final int LOW_STOCK_THRESHOLD = 10;
 
 	private static final Set<OrderStatus> SETTLED_STATUSES = Set.of(
 			OrderStatus.PAID,
@@ -61,7 +62,7 @@ public class DashboardService {
 				.toList();
 
 		List<LowStockProductDto> lowStockProducts = allProducts.stream()
-				.filter(p -> p.getStockQuantity() <= 10)
+				.filter(p -> p.getStockQuantity() <= LOW_STOCK_THRESHOLD)
 				.sorted(Comparator.comparing(Product::getStockQuantity))
 				.map(dashboardMapper::toLowStockProductDto)
 				.toList();
@@ -94,10 +95,21 @@ public class DashboardService {
 		);
 	}
 
-	@Transactional(readOnly = true)
 	public List<CategoryAnalyticsDto> getCategoriesWithCounts() {
 		var projections = categoryRepository.findAllWithProductCounts();
 		return dashboardMapper.toAnalyticsDtoList(projections);
+	}
+
+	public ProductAnalyticsDto getProductAnalytics() {
+		ProductRepository.MetricsSummary summary = productRepository.getMetricsSummary();
+
+		return new ProductAnalyticsDto(
+				summary.getTotalProducts(),
+				summary.getTotalCategories(),
+				productRepository.countLowStockProducts(LOW_STOCK_THRESHOLD),
+				BigDecimal.valueOf(summary.getAveragePrice())
+						.setScale(2, RoundingMode.HALF_UP)
+		);
 	}
 
 	private List<TopProductDto> aggregateTopProducts(List<Order> settledOrders, List<Product> products) {
