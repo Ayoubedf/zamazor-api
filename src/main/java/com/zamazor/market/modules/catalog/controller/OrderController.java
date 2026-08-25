@@ -1,9 +1,10 @@
 package com.zamazor.market.modules.catalog.controller;
 
-import com.zamazor.market.modules.catalog.models.dto.PaymentSessionResponse;
+import com.zamazor.market.modules.billing.models.dto.CheckoutRequest;
+import com.zamazor.market.modules.billing.models.dto.PaymentSessionResponse;
+import com.zamazor.market.modules.billing.service.OrderPaymentService;
 import com.zamazor.market.modules.catalog.models.dto.UpdateStatusRequest;
 import com.zamazor.market.shared.api.PageResponse;
-import com.zamazor.market.modules.catalog.models.dto.CheckoutRequest;
 import com.zamazor.market.modules.catalog.models.dto.OrderDto;
 import com.zamazor.market.modules.catalog.models.entity.OrderStatus;
 import com.zamazor.market.modules.catalog.service.OrderService;
@@ -25,6 +26,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class OrderController {
 	private final OrderService orderService;
+	private final OrderPaymentService orderPaymentService;
 
 	@PreAuthorize("hasRole('ADMIN')")
 	@GetMapping
@@ -71,12 +73,12 @@ public class OrderController {
 
 	@PostMapping("/checkout")
 	public ResponseEntity<OrderDto> checkout(@AuthenticationPrincipal User user, @Valid @RequestBody CheckoutRequest request) {
-		return ResponseEntity.ok(orderService.checkout(user, request));
+		return ResponseEntity.ok(orderPaymentService.checkout(user, request));
 	}
 
 	@GetMapping("/checkout/{orderId}/pay")
 	public ResponseEntity<PaymentSessionResponse> payOrder(@PathVariable UUID orderId) {
-		return ResponseEntity.ok(orderService.regeneratePaymentLink(orderId));
+		return ResponseEntity.ok(orderPaymentService.regeneratePaymentLink(orderId));
 	}
 
 	@PostMapping("/checkout/{orderId}/verify")
@@ -85,13 +87,13 @@ public class OrderController {
 			@RequestParam("sessionId") String sessionId,
 			@AuthenticationPrincipal User user
 	) {
-		OrderDto verifiedOrder = orderService.verifyAndCompleteOrder(orderId, sessionId, user);
+		OrderDto verifiedOrder = orderService.verifyOrderPayment(orderId, sessionId, user);
 		return ResponseEntity.ok(verifiedOrder);
 	}
 
 	@PostMapping("/{orderId}/cancel")
-	public ResponseEntity<OrderDto> cancelOrder(@PathVariable UUID orderId, @AuthenticationPrincipal User user) {
-		return ResponseEntity.ok(orderService.cancelOrder(orderId, user));
+	public ResponseEntity<OrderDto> cancelOrder(@PathVariable UUID orderId) {
+		return ResponseEntity.ok(orderService.cancelOrder(orderId));
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")

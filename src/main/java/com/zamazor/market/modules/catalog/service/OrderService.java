@@ -1,28 +1,25 @@
 package com.zamazor.market.modules.catalog.service;
 
-import com.stripe.model.checkout.Session;
-import com.zamazor.market.mail.event.OrderPlacedEvent;
 import com.zamazor.market.mail.event.OrderStatusChangedEvent;
+import com.zamazor.market.modules.billing.models.entity.PaymentStatus;
+import com.zamazor.market.modules.billing.service.OrderPaymentService;
+import com.zamazor.market.modules.catalog.exception.IllegalOrderTransitionException;
+import com.zamazor.market.modules.catalog.exception.*;
 import com.zamazor.market.modules.catalog.models.dto.*;
-import com.zamazor.market.modules.catalog.models.entity.AddressComponent;
-import com.zamazor.market.modules.catalog.models.mapper.PaymentMapper;
+import com.zamazor.market.modules.catalog.models.mapper.OrderItemMapper;
 import com.zamazor.market.modules.product.repository.ProductRepository;
-import com.zamazor.market.modules.user.exception.UserNotFoundException;
-import com.zamazor.market.modules.user.repository.UserRepository;
+import com.zamazor.market.payment.config.OrderPolicyProperties;
 import com.zamazor.market.payment.exception.PaymentGatewayException;
 import com.zamazor.market.payment.service.PaymentService;
 import com.zamazor.market.shared.api.PageResponse;
-import com.zamazor.market.modules.catalog.exception.*;
 import com.zamazor.market.modules.catalog.models.entity.Order;
 import com.zamazor.market.modules.catalog.models.entity.OrderStatus;
 import com.zamazor.market.modules.catalog.models.mapper.OrderMapper;
-import com.zamazor.market.modules.catalog.repository.CartRepository;
 import com.zamazor.market.modules.catalog.repository.OrderRepository;
 import com.zamazor.market.modules.catalog.specification.OrderSpecifications;
 import com.zamazor.market.modules.user.models.entity.User;
-import com.zamazor.market.shared.model.dto.PricingInfo;
-import com.zamazor.market.shared.service.PricingService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,25 +28,24 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Transactional(readOnly = true)
 @Service
 @RequiredArgsConstructor
 public class OrderService {
-	private final CartRepository cartRepository;
 	private final OrderRepository orderRepository;
 	private final OrderMapper orderMapper;
-	private final AddressService addressService;
 	private final ProductRepository productRepository;
 	private final Clock clock;
-	private final ApplicationEventPublisher eventPublisher;
-	private final UserRepository userRepository;
+	private final ApplicationEventPublisher publisher;
 	private final PaymentService paymentService;
-	private final PaymentMapper paymentMapper;
-	private final PricingService pricingService;
+	private final OrderPolicyProperties policy;
+	private final OrderItemMapper orderItemMapper;
+	private final OrderPaymentService orderPaymentService;
 
 	public PageResponse<OrderDto> getAll(String userFullName, OrderStatus status, Pageable pageable) {
 		Specification<Order> spec = OrderSpecifications.createSpec(userFullName, status);
@@ -70,59 +66,11 @@ public class OrderService {
 	}
 
 	@Transactional
-	public OrderDto checkout(User user, CheckoutRequest request) {
-		var cart = cartRepository.findByUserId(user.getId())
-				.orElseThrow(CartNotFoundException::new);
-
-		if (cart.getItems().isEmpty()) {
-			throw new EmptyCartException("Cannot checkout an empty cart");
-		}
-
-		PricingInfo pricing = pricingService.calculate(cart, user);
-		var order = Order.createFromCart(cart, pricing);
-		var snapshot = new AddressComponent(
-				request.country(),
-				request.city(),
-				request.street(),
-				request.phone()
-		);
-		order.setShippingAddressSnapshot(snapshot);
-
-		if (request.isDefault()) {
-			var addressRequest = new AddressRequest(request.country(), request.city(), request.street(), request.phone());
-			addressService.createOrUpdate(user, addressRequest);
-		}
-
-		var savedOrder = orderRepository.saveAndFlush(order);
-		cart.clear();
-		cartRepository.saveAndFlush(cart);
-
-		String paymentUrl = paymentService.createCheckoutSession(savedOrder).getUrl();
-		eventPublisher.publishEvent(new OrderPlacedEvent(savedOrder, user, paymentUrl));
-
-		return orderMapper.toDto(savedOrder);
-	}
-
-	public PaymentSessionResponse regeneratePaymentLink(UUID orderId) {
-		var order = orderRepository.findById(orderId)
-				.orElseThrow(() -> new OrderNotFoundException(orderId));
-
-		//  Order is already processed or completed
-		if (order.getStatus() != OrderStatus.PENDING) {
-			throw new IllegalOrderStateException("Order Already Processed or completed");
-		}
-
-		Session session = paymentService.createCheckoutSession(order);
-		return paymentMapper.toDto(session);
-	}
-
-	@Transactional
 	public OrderDto changeStatus(UUID orderId, OrderStatus newStatus) {
 		var order = orderRepository.findById(orderId)
 				.orElseThrow(() -> new OrderNotFoundException(orderId));
-		var user = userRepository.findById(order.getUser().getId())
-				.orElseThrow(() -> new UserNotFoundException(order.getUser().getId()));
-		LocalDateTime now = LocalDateTime.now(clock);
+		var user = order.getUser();
+		Instant now = Instant.now(clock);
 
 		if (order.getStatus() == newStatus) return orderMapper.toDto(order);
 
@@ -133,66 +81,102 @@ public class OrderService {
 		}
 
 		var savedOrder = orderRepository.save(order);
-		eventPublisher.publishEvent(new OrderStatusChangedEvent(savedOrder, user, newStatus));
+		var items = savedOrder.getItems().stream().map(orderItemMapper::toDto).toList();
+		publisher.publishEvent(new OrderStatusChangedEvent(
+				orderId,
+				user.getEmail(),
+				savedOrder.getStatus(),
+				savedOrder.getTotal(),
+				items
+		));
 
 		return orderMapper.toDto(savedOrder);
 	}
 
 	@Transactional
-	public OrderDto cancelOrder(UUID orderId, User user) {
+	public OrderDto cancelOrder(UUID orderId, PaymentStatus targetPaymentStatus) {
 		var order = orderRepository.findById(orderId)
 				.orElseThrow(() -> new OrderNotFoundException(orderId));
-
-		if (!user.getIsAdmin() && !order.getUser().getId().equals(user.getId())) {
-			throw new UnauthorizedOrderException("You do not have permission to cancel this order");
-		}
+		String userEmail = order.getUser().getEmail();
 
 		if (order.getStatus() == OrderStatus.CANCELED) return orderMapper.toDto(order);
 
-		LocalDateTime now = LocalDateTime.now(clock);
-		handleCancellation(order, now);
+		Instant now = Instant.now(clock);
+		handleCancellation(order, now, targetPaymentStatus);
 
 		var savedOrder = orderRepository.save(order);
-		eventPublisher.publishEvent(new OrderStatusChangedEvent(savedOrder, user, OrderStatus.CANCELED));
+		var items = savedOrder.getItems().stream().map(orderItemMapper::toDto).toList();
+		publisher.publishEvent(new OrderStatusChangedEvent(
+				orderId,
+				userEmail,
+				savedOrder.getStatus(),
+				savedOrder.getTotal(),
+				items
+		));
 
 		return orderMapper.toDto(savedOrder);
 	}
 
 	@Transactional
-	public OrderDto verifyAndCompleteOrder(UUID orderId, String sessionId, User user) {
+	public OrderDto cancelOrder(UUID orderId) {
+		return cancelOrder(orderId, PaymentStatus.CANCELED);
+	}
+
+	@Transactional
+	public OrderDto verifyOrderPayment(UUID orderId, String sessionId, User user) {
 		var order = orderRepository.findById(orderId)
 				.orElseThrow(() -> new OrderNotFoundException(orderId));
 
 		if (!order.getUser().getId().equals(user.getId()))
-			throw new UnauthorizedOrderException("You do not have permission to modify this order");
-		if (order.getStatus() == OrderStatus.PAID)
+			throw new UnauthorizedOrderException("You do not have permission for this order");
+		if (order.getStatus() == OrderStatus.CONFIRMED)
 			return orderMapper.toDto(order);
-		if (order.getStatus() != OrderStatus.PENDING)
-			throw new IllegalOrderStateException("Order is not in a payable state");
-		if (!paymentService.isSessionPaid(sessionId)) {
+		if (paymentService.isSessionUnPaid(sessionId)) {
 			throw new PaymentGatewayException("Payment verification failed. Transaction is incomplete or declined.");
 		}
 
-		order.setStatus(OrderStatus.PAID);
-		var savedOrder = orderRepository.save(order);
-
-		eventPublisher.publishEvent(new OrderStatusChangedEvent(savedOrder, user, OrderStatus.PAID));
-
-		return orderMapper.toDto(savedOrder);
+		return orderPaymentService.confirmPayment(orderId);   // guarded transition + confirm reservations, idempotent
 	}
 
-	private void handleCancellation(Order order, LocalDateTime now) {
-		List<StockRestoreDto> itemsToRestore = order.cancel(now);
+	private void handleCancellation(Order order, Instant now, PaymentStatus targetPaymentStatus) {
+		// Guarded PENDING -> CANCELED: the sweeper, user-cancel and webhook cancel race here.
+		if (orderRepository.transitionStatus(order.getId(), OrderStatus.PENDING, OrderStatus.CANCELED) == 0) {
+			if (order.getStatus() == OrderStatus.CANCELED) {
+				log.warn("Order {} already canceled — no-op", order.getId());
+				return;
+			}
+			throw new IllegalOrderTransitionException("Cannot cancel order %s in status %s".
+					formatted(order.getId(), order.getStatus())
+			);
+		}
+
+		order.setPaymentStatus(targetPaymentStatus);
+
+		List<StockRestoreDto> itemsToRestore = order.cancel(now, policy);
 		if (!itemsToRestore.isEmpty()) {
 			restoreInventoryStock(itemsToRestore);
 		}
 	}
 
-	private void handleRefund(Order order, LocalDateTime now) {
-		if (order.getStatus() != OrderStatus.DELIVERED && order.getStatus() != OrderStatus.PAID) {
-			throw new IllegalOrderStateException("Only paid or delivered orders can be refunded.");
+	private void handleCancellation(Order order, Instant now) {
+		handleCancellation(order, now, PaymentStatus.CANCELED);
+	}
+
+	private void handleRefund(Order order, Instant now) {
+		if (order.getStatus() != OrderStatus.DELIVERED && order.getStatus() != OrderStatus.CONFIRMED) {
+			throw new IllegalOrderTransitionException("Only paid or delivered orders can be refunded.");
 		}
-		List<StockRestoreDto> itemsToRestore = order.refund(now);
+
+		if (order.getStripePaymentIntentId() != null) {
+			try {
+				paymentService.refundPayment(order.getStripePaymentIntentId(), order.getTotal());
+			} catch (Exception e) {
+				log.error("Failed to process gateway refund for order {}: {}", order.getId(), e.getMessage());
+				throw new PaymentGatewayException("Refund gateway communication failed: " + e.getMessage());
+			}
+		}
+
+		List<StockRestoreDto> itemsToRestore = order.refund(now, policy);
 		if (!itemsToRestore.isEmpty()) {
 			restoreInventoryStock(itemsToRestore);
 		}
@@ -200,11 +184,10 @@ public class OrderService {
 
 	private void restoreInventoryStock(List<StockRestoreDto> itemsToRestore) {
 		for (StockRestoreDto item : itemsToRestore) {
-			productRepository.findById(item.productId())
-					.ifPresent(product -> {
-						product.restoreStock(item.quantity());
-						productRepository.save(product);
-					});
+			if (productRepository.restoreAvailability(item.productId(), item.quantity()) == 0) {
+				log.warn("restoreAvailability no-op for product {} qty {} — already restored?",
+						item.productId(), item.quantity());
+			}
 		}
 	}
 }

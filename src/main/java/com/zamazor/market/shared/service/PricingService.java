@@ -2,7 +2,7 @@ package com.zamazor.market.shared.service;
 
 import com.zamazor.market.modules.catalog.models.entity.Cart;
 import com.zamazor.market.modules.user.models.entity.User;
-import com.zamazor.market.shared.model.dto.PricingInfo;
+import com.zamazor.market.shared.model.dto.PricingResult;
 import com.zamazor.market.shared.util.DiscountCalculator;
 import com.zamazor.market.shared.util.ShippingCalculator;
 import com.zamazor.market.shared.util.TaxCalculator;
@@ -18,7 +18,7 @@ public class PricingService {
 	private final DiscountCalculator discountCalculator;
 	private final ShippingCalculator shippingCalculator;
 
-	public PricingInfo calculate(Cart cart, User user) {
+	public PricingResult calculate(Cart cart, User user) {
 		var address = user.getAddress();
 		BigDecimal subtotal = cart.getSubtotal();
 		BigDecimal discount = discountCalculator.calculate(cart);
@@ -29,6 +29,6 @@ public class PricingService {
 		BigDecimal shipping = shippingCalculator.calculate(cart.getItems(), address);
 		BigDecimal total = taxableAmount.add(tax).add(shipping);
 
-		return new PricingInfo(subtotal, discount, tax, shipping, total);
+		return new PricingResult(subtotal, discount, tax, shipping, total);
 	}
 }

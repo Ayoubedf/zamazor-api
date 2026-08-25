@@ -3,7 +3,7 @@ package com.zamazor.market.modules.auth.service;
 import com.zamazor.market.config.ApplicationProperties;
 import com.zamazor.market.mail.service.EmailService;
 import com.zamazor.market.security.crypto.JwtService;
-import com.zamazor.market.modules.auth.exception.EmailAlreadyExistsException;
+import com.zamazor.market.modules.auth.exception.EmailAlreadyInUseException;
 import com.zamazor.market.modules.auth.exception.UnauthorizedException;
 import com.zamazor.market.modules.auth.models.dto.*;
 import com.zamazor.market.modules.user.models.mapper.UserMapper;
@@ -38,7 +38,7 @@ public class AuthenticationService {
 	@Transactional
 	public UserDto register(RegisterRequest request) {
 		if (userRepository.existsByEmail(request.email())) {
-			throw new EmailAlreadyExistsException("An account with this email already exists");
+			throw new EmailAlreadyInUseException("An account with this email already in use");
 		}
 		var user = userMapper.toEntity(request);
 		user.setPassword(Objects.requireNonNull(passwordEncoder.encode(request.password())));
@@ -98,13 +98,15 @@ public class AuthenticationService {
 	}
 
 	private void sendRegistrationSuccessEmail(String to) {
+		var link = "%s/login".formatted(application.frontendUrl());
+
 		emailService.sendHtmlEmail(
 				to,
 				"Account Registration Successful!",
 				"registration-success",
 				Map.of(
 						"appName", application.name(),
-						"loginUrl", application.frontendUrl() + "/login",
+						"loginUrl", link,
 						"supportEmail", application.supportEmail(),
 						"supportPhone", application.supportPhone(),
 						"year", Year.now().getValue()

@@ -8,14 +8,12 @@ import com.zamazor.market.modules.user.models.dto.UserDto;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
-@Slf4j
 @RequestMapping("/auth")
 @RestController
 @RequiredArgsConstructor
@@ -54,8 +52,7 @@ public class AuthenticationController {
 	}
 
 	@GetMapping("/me")
-	public ResponseEntity<UserDto> me(@RequestHeader(value = "Origin", required = false) String origin) {
-		log.info("Incoming request ORIGIN header is: [{}]", origin);
+	public ResponseEntity<UserDto> me() {
 		return ResponseEntity.ok(authenticationService.getCurrentUser());
 	}
 }

@@ -7,6 +7,6 @@ import java.util.UUID;
 
 public class UserNotFoundException extends DomainException {
 	public UserNotFoundException(UUID id) {
-		super("User not found with id: " + id, HttpStatus.NOT_FOUND, "User Not Found");
+		super("User not found with id: %s".formatted(id), HttpStatus.NOT_FOUND, "User Not Found");
 	}
 }

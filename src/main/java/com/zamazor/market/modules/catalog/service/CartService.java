@@ -12,15 +12,18 @@ import com.zamazor.market.modules.product.models.entity.Product;
 import com.zamazor.market.modules.product.repository.ProductRepository;
 import com.zamazor.market.modules.user.models.entity.User;
 import com.zamazor.market.modules.user.repository.UserRepository;
-import com.zamazor.market.shared.model.dto.PricingInfo;
+import com.zamazor.market.shared.model.dto.PricingResult;
 import com.zamazor.market.shared.service.PricingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Transactional(readOnly = true)
@@ -36,30 +39,44 @@ public class CartService {
 
 	@Transactional
 	public CartDto mergeCart(User user, List<GuestCartItemDto> items) {
-		var cart = cartRepository.findByUserId(user.getId())
+		Cart cart = cartRepository.findByUserId(user.getId())
 				.orElseGet(() -> {
-					var newCart = new Cart();
+					Cart newCart = new Cart();
 					user.setCart(newCart);
-					userRepository.saveAndFlush(user);
-					return cartRepository.save(newCart);
+					userRepository.saveAndFlush(user); // Cascades or saves safely
+					return newCart;
 				});
 
-		if (items == null || items.isEmpty())
+		if (items == null || items.isEmpty()) {
 			return cartMapper.toDto(cart, pricingService.calculate(cart, user));
+		}
 
-		cart.mergeGuestCart(items, extractGuestCartProductMap(items));
+		// Extract products in a single batch query
+		List<UUID> productIds = items.stream().map(GuestCartItemDto::productId).toList();
+		Map<UUID, Product> productMap = productRepository.findAllById(productIds).stream()
+				.collect(Collectors.toMap(Product::getId, Function.identity()));
 
-		PricingInfo pricing = pricingService.calculate(cart, user);
+		cart.mergeGuestCart(items, productMap);
+
+		PricingResult pricing = pricingService.calculate(cart, user);
 		return cartMapper.toDto(cartRepository.save(cart), pricing);
 	}
 
 	public CartDto getCartByUserId(User user) {
-		var cart = cartRepository.findByUserId(user.getId())
-				.orElseThrow(CartNotFoundException::new);
-
-		PricingInfo pricing = pricingService.calculate(cart, user);
-
-		return cartMapper.toDto(cart, pricing);
+		return cartRepository.findByUserId(user.getId())
+				.map(cart -> {
+					PricingResult pricing = pricingService.calculate(cart, user);
+					return cartMapper.toDto(cart, pricing);
+				})
+				.orElseGet(() -> new CartDto(
+						null,
+						Collections.emptyList(),
+						BigDecimal.ZERO,
+						null,
+						null,
+						null,
+						BigDecimal.ZERO
+				));
 	}
 
 	@Transactional
@@ -78,7 +95,7 @@ public class CartService {
 
 		cart.addProduct(product, request.quantity());
 
-		PricingInfo pricing = pricingService.calculate(cart, user);
+		PricingResult pricing = pricingService.calculate(cart, user);
 		return cartMapper.toDto(cartRepository.saveAndFlush(cart), pricing);
 	}
 
@@ -91,7 +108,7 @@ public class CartService {
 
 		cart.updateItemQuantity(product, quantity);
 
-		PricingInfo pricing = pricingService.calculate(cart, user);
+		PricingResult pricing = pricingService.calculate(cart, user);
 		return cartMapper.toDto(cartRepository.save(cart), pricing);
 	}
 
@@ -105,7 +122,7 @@ public class CartService {
 
 		cart.removeItem(productId);
 
-		PricingInfo pricing = pricingService.calculate(cart, user);
+		PricingResult pricing = pricingService.calculate(cart, user);
 		return cartMapper.toDto(cartRepository.save(cart), pricing);
 	}
 
@@ -115,13 +132,5 @@ public class CartService {
 				.orElseThrow(CartNotFoundException::new);
 
 		cart.clear();
-	}
-
-	private Map<UUID, Product> extractGuestCartProductMap(List<GuestCartItemDto> items) {
-		List<UUID> productIds = items.stream().map(GuestCartItemDto::productId).toList();
-		List<Product> products = productRepository.findAllById(productIds);
-
-		return products.stream()
-				.collect(Collectors.toMap(Product::getId, p -> p));
 	}
 }

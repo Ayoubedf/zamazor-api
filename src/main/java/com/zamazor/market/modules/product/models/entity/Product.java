@@ -1,9 +1,10 @@
 package com.zamazor.market.modules.product.models.entity;
 
-import com.zamazor.market.modules.catalog.exception.OutOfStockException;
 import com.zamazor.market.modules.catalog.models.entity.CartItem;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SoftDelete;
+import org.hibernate.annotations.SoftDeleteType;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -23,6 +24,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "products")
 @EntityListeners(AuditingEntityListener.class)
+@SoftDelete(strategy = SoftDeleteType.TIMESTAMP, columnName = "deleted_at")
 public class Product {
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
@@ -72,19 +74,7 @@ public class Product {
 	@LastModifiedDate
 	private Instant modifiedAt;
 
-	public void deductStock(int quantity) {
-		if (this.stockQuantity < quantity) {
-			throw new OutOfStockException("Not enough stock for: " + this.name);
-		}
-		this.stockQuantity -= quantity;
-		this.reservedQuantity += quantity;
-	}
-
-	public void restoreStock(Integer quantity) {
-		if (quantity == null || quantity <= 0) {
-			throw new IllegalArgumentException("Quantity to restore must be greater than zero");
-		}
-		this.stockQuantity += quantity;
-		this.reservedQuantity -= quantity;
+	public int availableQuantity() {
+		return this.stockQuantity - this.reservedQuantity;
 	}
 }

@@ -57,13 +57,13 @@
 							<tr>
 								<td colspan="2" style="padding: 20px;">
 									<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-										<!--/*@thymesVar id="item" type="com.zamazor.market.modules.catalog.models.entity.OrderItem"*/-->
+										<!--/*@thymesVar id="item" type="com.zamazor.market.modules.catalog.models.dto.OrderItemDto"*/-->
 										<tr th:each="item : ${items}">
-											<td th:text="${item.productName} + ' (x' + ${item.quantity} + ')'"
+											<td th:text="${item.product().name()} + ' (x' + ${item.quantity()} + ')'"
 											    style="font-size: 14px; color: #4b5563; padding-bottom: 10px;">Product
 												Name (x1)
 											</td>
-											<td align="right" th:text="${item.unitPrice} + ' MAD'"
+											<td align="right" th:text="${item.product().price()} + ' MAD'"
 											    style="font-size: 14px; font-weight: 500; color: #111827; padding-bottom: 10px;">
 												0.00 MAD
 											</td>

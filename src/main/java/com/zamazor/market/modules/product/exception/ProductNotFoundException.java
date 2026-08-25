@@ -7,6 +7,6 @@ import java.util.UUID;
 
 public class ProductNotFoundException extends DomainException {
 	public ProductNotFoundException(UUID id) {
-		super("Product not found with id: " + id, HttpStatus.NOT_FOUND, "Product Not Found");
+		super("Product not found with id: %s".formatted(id), HttpStatus.NOT_FOUND, "Product Not Found");
 	}
 }

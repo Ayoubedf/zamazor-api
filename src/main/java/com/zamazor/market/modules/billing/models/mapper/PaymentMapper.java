@@ -1,7 +1,7 @@
-package com.zamazor.market.modules.catalog.models.mapper;
+package com.zamazor.market.modules.billing.models.mapper;
 
 import com.stripe.model.checkout.Session;
-import com.zamazor.market.modules.catalog.models.dto.PaymentSessionResponse;
+import com.zamazor.market.modules.billing.models.dto.PaymentSessionResponse;
 import com.zamazor.market.shared.util.DateTimeMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

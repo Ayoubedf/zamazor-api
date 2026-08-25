@@ -21,7 +21,7 @@ public class CategoryService {
 
 	public CategoryDto create(CategoryRequest request) {
 		if (categoryRepository.existsByLabel(request.label())) {
-			throw new CategoryAlreadyExistsException("Category with label " + request.label() + " already exists");
+			throw new CategoryAlreadyExistsException("Category with label %s already exists".formatted(request.label()));
 		}
 		var category = new Category();
 		category.setLabel(request.label());
@@ -37,7 +37,7 @@ public class CategoryService {
 				.orElseThrow(() -> new CategoryNotFoundException(id));
 
 		if (categoryRepository.existsByLabel(request.label())) {
-			throw new CategoryAlreadyExistsException("Category with label " + request.label() + " already exists");
+			throw new CategoryAlreadyExistsException("Category with label %s already exists".formatted(request.label()));
 		}
 
 		category.setLabel(request.label());

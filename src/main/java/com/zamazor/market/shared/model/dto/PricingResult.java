@@ -4,7 +4,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 
-public record PricingInfo(
+public record PricingResult(
 		BigDecimal subtotal,
 		@Nullable BigDecimal discount,
 		@Nullable BigDecimal tax,

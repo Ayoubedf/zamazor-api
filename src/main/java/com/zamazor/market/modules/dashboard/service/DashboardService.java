@@ -28,7 +28,8 @@ public class DashboardService {
 	private static final int LOW_STOCK_THRESHOLD = 10;
 
 	private static final Set<OrderStatus> SETTLED_STATUSES = Set.of(
-			OrderStatus.PAID,
+			OrderStatus.CONFIRMED,
+			OrderStatus.SHIPPED,
 			OrderStatus.DELIVERED
 	);
 	private final CategoryRepository categoryRepository;

@@ -1,7 +1,8 @@
 package com.zamazor.market.shared.exception;
 
 import com.zamazor.market.media.exception.MediaStorageException;
-import com.zamazor.market.modules.auth.exception.EmailAlreadyExistsException;
+import com.zamazor.market.modules.catalog.exception.IllegalOrderTransitionException;
+import com.zamazor.market.modules.auth.exception.EmailAlreadyInUseException;
 import com.zamazor.market.modules.auth.exception.UnauthorizedException;
 import com.zamazor.market.modules.catalog.exception.*;
 import com.zamazor.market.modules.product.exception.CategoryNotFoundException;
@@ -51,7 +52,7 @@ public class ExceptionResolver extends ResponseEntityExceptionHandler {
 					createProblemDetail(401, e.getMessage(), "JWT token has expired"); // should be 401 to allow refresh in the frontend
 			case ObjectOptimisticLockingFailureException e ->
 					createProblemDetail(409, e.getMessage(), "Optimistic locking failed");
-			case EmailAlreadyExistsException e -> createProblemDetail(409, e.getMessage(), "Email already exists");
+			case EmailAlreadyInUseException e -> createProblemDetail(409, e.getMessage(), "Email already in use");
 			case UnauthorizedException e -> createProblemDetail(401, e.getMessage(), "Authentication Required");
 			case InsufficientAuthenticationException e -> createProblemDetail(401, e.getMessage(), "Authentication Required");
 			case UserNotFoundException e -> createProblemDetail(404, e.getMessage(), "User Not Found");
@@ -62,7 +63,8 @@ public class ExceptionResolver extends ResponseEntityExceptionHandler {
 					createProblemDetail(500, e.getMessage(), "Media storage service failed to process asset");
 			case CartNotFoundException e -> createProblemDetail(404, e.getMessage(), "Cart Not Found");
 			case OrderNotFoundException e -> createProblemDetail(404, e.getMessage(), "Order Not Found");
-			case IllegalOrderStateException e -> createProblemDetail(409, e.getMessage(), "Order status cannot be changed");
+			case IllegalOrderTransitionException e ->
+					createProblemDetail(409, e.getMessage(), "Order status cannot be changed");
 			case OrderCancellationException e -> createProblemDetail(409, e.getMessage(), "Order Cancellation Failed");
 			case OrderRefundException e -> createProblemDetail(409, e.getMessage(), "Order Refund Failed");
 			case EmptyCartException e -> createProblemDetail(400, e.getMessage(), "Cart is Empty");

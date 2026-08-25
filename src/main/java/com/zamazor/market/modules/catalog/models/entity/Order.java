@@ -1,26 +1,29 @@
 package com.zamazor.market.modules.catalog.models.entity;
 
-import com.zamazor.market.modules.catalog.exception.IllegalOrderStateException;
+import com.zamazor.market.modules.billing.models.entity.PaymentStatus;
+import com.zamazor.market.modules.catalog.exception.IllegalOrderTransitionException;
 import com.zamazor.market.modules.catalog.models.dto.StockRestoreDto;
 import com.zamazor.market.modules.product.exception.OrderCancellationException;
 import com.zamazor.market.modules.product.exception.OrderRefundException;
 import com.zamazor.market.modules.user.models.entity.User;
-import com.zamazor.market.shared.model.dto.PricingInfo;
+import com.zamazor.market.payment.config.OrderPolicyProperties;
+import com.zamazor.market.shared.model.dto.PricingResult;
+import com.zamazor.market.shared.util.OrderStateMachine;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.BatchSize;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Getter
 @Setter
 @Entity
@@ -33,22 +36,41 @@ public class Order {
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
-	private OrderStatus status;
+	private OrderStatus status = OrderStatus.PENDING;
 
-	@Column(nullable = false)
+	@Enumerated(EnumType.STRING)
+	@Column(name = "payment_status", nullable = false)
+	private PaymentStatus paymentStatus = PaymentStatus.PENDING;
+
+	@Column(name = "stripe_checkout_session_id", unique = true)
+	private String stripeCheckoutSessionId;
+
+	@Column(name = "stripe_payment_intent_id")
+	private String stripePaymentIntentId;
+
+	@Column(name = "payment_attempt_count", nullable = false)
+	private int paymentAttemptCount = 0;
+
+	@Column(nullable = false, precision = 10, scale = 2)
 	private BigDecimal subtotal;
 
-	@Column(nullable = false)
+	@Column(nullable = false, precision = 10, scale = 2)
 	private BigDecimal tax = BigDecimal.ZERO;
 
-	@Column(nullable = false)
-	private BigDecimal shippingCost;
+	@Column(name = "shipping_cost", nullable = false, precision = 10, scale = 2)
+	private BigDecimal shippingCost = BigDecimal.ZERO;
 
-	@Column(nullable = false)
-	private BigDecimal discount;
+	@Column(nullable = false, precision = 10, scale = 2)
+	private BigDecimal discount = BigDecimal.ZERO;
 
-	@Column(nullable = false)
+	@Column(nullable = false, precision = 10, scale = 2)
 	private BigDecimal total;
+
+	@Column(name = "refunded_amount", precision = 10, scale = 2, nullable = false)
+	private BigDecimal refundedAmount = BigDecimal.ZERO;
+
+	@Column(name = "refunded_at")
+	private Instant refundedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "user_id", nullable = false)
@@ -70,15 +92,105 @@ public class Order {
 	@CreatedDate
 	private Instant createdAt;
 
-	public void addOrderItem(OrderItem orderItem) {
-		this.items.add(orderItem);
-		orderItem.setOrder(this);
+	@Column(name = "paid_at")
+	private Instant paidAt;
+
+	@Version
+	private Long version;
+
+	public void markPaid(String paymentIntentId, Instant now) {
+		if (status == OrderStatus.CONFIRMED) return;
+		OrderStateMachine.verify(status, OrderStatus.CANCELED);
+
+		this.status = OrderStatus.CONFIRMED;
+		this.paymentStatus = PaymentStatus.PAID;
+		this.stripePaymentIntentId = paymentIntentId;
+		this.paidAt = now;
 	}
 
-	public static Order createFromCart(Cart cart, PricingInfo pricing) {
+	public void markPaymentFailedOrCanceled(String eventType) {
+		if (status == OrderStatus.CANCELED
+				&& (paymentStatus == PaymentStatus.CANCELED || paymentStatus == PaymentStatus.FAILED)) {
+			return;
+		}
+		OrderStateMachine.verify(status, OrderStatus.CANCELED);
+
+		this.status = OrderStatus.CANCELED;
+		this.paymentStatus = "payment_intent.canceled".equals(eventType)
+				? PaymentStatus.CANCELED
+				: PaymentStatus.FAILED;
+	}
+
+	public List<StockRestoreDto> recordRefundApplied(BigDecimal refunded, Instant now) {
+		if (refunded == null) return List.of();
+		if (this.refundedAmount != null && refunded.compareTo(this.refundedAmount) <= 0) return List.of();
+
+		this.refundedAmount = refunded;
+
+		// If it transitions to full refund for the first time, return items to restore
+		if (this.status != OrderStatus.REFUNDED && this.refundedAmount.compareTo(this.total) >= 0) {
+			OrderStateMachine.verify(status, OrderStatus.REFUNDED);
+			this.status = OrderStatus.REFUNDED;
+			this.paymentStatus = PaymentStatus.REFUNDED;
+			this.refundedAt = now;
+			return stockRestore();
+		} else if (this.refundedAmount.compareTo(this.total) >= 0) {
+			this.status = OrderStatus.REFUNDED;
+			this.paymentStatus = PaymentStatus.REFUNDED;
+			this.refundedAt = now;
+		} else {
+			this.paymentStatus = PaymentStatus.PARTIALLY_REFUNDED;
+		}
+
+		return List.of();
+	}
+
+	public List<StockRestoreDto> cancel(Instant now, OrderPolicyProperties policy) {
+		if (this.status == OrderStatus.CANCELED) return List.of();
+		if (OrderStateMachine.isTerminal(status)) {
+			throw new OrderCancellationException("Cannot cancel a finalized order.");
+		}
+
+		// Only enforce the strict cancelWindow if the order is past PENDING (e.g., CONFIRMED)
+		if (this.status == OrderStatus.CONFIRMED && policy.cancelExpired(createdAt, now)) {
+			throw new OrderCancellationException(
+					"Order cancellation window of %d days has expired."
+							.formatted(policy.cancelWindow().toDays()));
+		}
+
+		// For PENDING orders, you might want to check paymentHold instead:
+//		if (this.status == OrderStatus.PENDING && policy.paymentHoldExpired(createdAt, now)) {
+//			// Handle pending order expiration
+//		}
+
+		OrderStateMachine.verify(status, OrderStatus.CANCELED);
+		this.status = OrderStatus.CANCELED;
+		return stockRestore();
+	}
+
+	public List<StockRestoreDto> refund(Instant now, OrderPolicyProperties policy) {
+		if (this.status == OrderStatus.REFUNDED) return List.of();
+		if (status != OrderStatus.CONFIRMED && status != OrderStatus.SHIPPED && status != OrderStatus.DELIVERED) {
+			throw new OrderRefundException("Only confirmed, shipped or delivered orders can be refunded.");
+		}
+		if (paymentStatus != PaymentStatus.PAID || paidAt == null) {
+			throw new OrderRefundException("Cannot refund an order that was never paid.");
+		}
+		if (policy.refundExpired(paidAt, now)) {
+			throw new OrderRefundException(
+					"Refund window of %d days from payment has expired."
+							.formatted(policy.refundWindow().toDays()));
+		}
+		OrderStateMachine.verify(status, OrderStatus.REFUNDED);
+		this.paymentStatus = PaymentStatus.REFUNDED;
+		this.status = OrderStatus.REFUNDED;
+		this.refundedAt = now;
+		return stockRestore();
+	}
+
+	public static Order createFromCart(Cart cart, PricingResult pricing) {
 		var order = new Order();
 		order.setUser(cart.getUser());
-		order.setStatus(OrderStatus.PENDING);
 		order.setSubtotal(pricing.subtotal());
 		order.setDiscount(pricing.discount());
 		order.setTax(pricing.tax());
@@ -87,60 +199,44 @@ public class Order {
 
 		for (CartItem item : cart.getItems()) {
 			var product = item.getProduct();
-			product.deductStock(item.getQuantity());
 
-			var newItem = new OrderItem();
-			newItem.setOrder(order);
-			newItem.setProductId(product.getId());
-			newItem.setProductName(product.getName());
-			newItem.setProductImageUrl(product.getImageUrl());
-			newItem.setUnitPrice(product.getPrice());
-			newItem.setQuantity(item.getQuantity());
+			var line = new OrderItem();
+			line.setOrder(order);
+			line.setProductId(product.getId());
+			line.setProductName(product.getName());
+			line.setProductImageUrl(product.getImageUrl());
+			line.setUnitPrice(product.getPrice());
+			line.setQuantity(item.getQuantity());
 
-			order.addOrderItem(newItem);
+			order.addOrderItem(line);
 		}
-
 		return order;
 	}
 
-	public List<StockRestoreDto> cancel(LocalDateTime now) {
-		if (this.status == OrderStatus.CANCELED) return List.of();
-		if (this.status == OrderStatus.DELIVERED || this.status == OrderStatus.REFUNDED) {
-			throw new OrderCancellationException("Cannot cancel an order that is already delivered or refunded.");
-		}
-		if (this.createdAt.isBefore(Instant.from(now.minusDays(2).atZone(ZoneOffset.UTC).toInstant()))) {
-			throw new OrderCancellationException("Order cancellation window (2 days) has expired.");
-		}
-
-		this.status = OrderStatus.CANCELED;
-		return getStockRestoreDtos();
+	public void addOrderItem(OrderItem line) {
+		this.items.add(line);
+		line.setOrder(this);
 	}
 
-	public List<StockRestoreDto> refund(LocalDateTime now) {
-		if (this.status == OrderStatus.REFUNDED) {
-			return List.of();
-		}
-		if (this.status != OrderStatus.DELIVERED) {
-			throw new OrderRefundException("Only completed or delivered orders can be refunded.");
-		}
-		if (this.createdAt.isBefore(Instant.from(now.minusDays(2).atZone(ZoneOffset.UTC).toInstant()))) {
-			throw new OrderRefundException("Order exceeds the 30-day refund policy window.");
-		}
-
-		this.status = OrderStatus.REFUNDED;
-		return getStockRestoreDtos();
+	private List<StockRestoreDto> stockRestore() {
+		return this.items.stream()
+				.map(i -> new StockRestoreDto(i.getProductId(), i.getQuantity()))
+				.toList();
 	}
 
 	public void transitionTo(OrderStatus newStatus) {
-		if (this.status == OrderStatus.CANCELED || this.status == OrderStatus.REFUNDED) {
-			throw new IllegalOrderStateException("Cannot modify a finalized order");
+		if (newStatus != OrderStatus.SHIPPED && newStatus != OrderStatus.DELIVERED) {
+			throw new IllegalOrderTransitionException(
+					"Manual transitions are limited to SHIPPED/DELIVERED; CONFIRMED goes through payment");
 		}
+		if (paymentStatus != PaymentStatus.PAID) {
+			throw new IllegalOrderTransitionException("Cannot fulfill an unpaid order");
+		}
+		OrderStateMachine.verify(this.status, newStatus);
 		this.status = newStatus;
 	}
 
-	private List<StockRestoreDto> getStockRestoreDtos() {
-		return this.items.stream()
-				.map(item -> new StockRestoreDto(item.getProductId(), item.getQuantity()))
-				.toList();
+	public boolean acceptsPayment() {
+		return status == OrderStatus.PENDING;
 	}
 }

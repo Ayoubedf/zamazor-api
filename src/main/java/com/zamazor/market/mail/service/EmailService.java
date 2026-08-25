@@ -36,7 +36,7 @@ public class EmailService {
 
 			Context context = new Context();
 			context.setVariables(variables);
-			String htmlContent = templateEngine.process("emails/" + templateName, context);
+			String htmlContent = templateEngine.process("emails/%s".formatted(templateName), context);
 
 			helper.setTo(to);
 			helper.setFrom(mailProperties.fromAddress(), mailProperties.personalName());

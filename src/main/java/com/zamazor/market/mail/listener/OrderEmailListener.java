@@ -5,6 +5,7 @@ import com.zamazor.market.mail.event.OrderPlacedEvent;
 import com.zamazor.market.mail.event.OrderStatusChangedEvent;
 import com.zamazor.market.mail.service.EmailService;
 import com.zamazor.market.modules.catalog.models.entity.Order;
+import com.zamazor.market.modules.catalog.models.mapper.OrderItemMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -22,6 +23,7 @@ import java.util.Map;
 public class OrderEmailListener {
 	private final EmailService emailService;
 	private final ApplicationProperties application;
+	private final OrderItemMapper orderItemMapper;
 
 	@Async
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -31,7 +33,7 @@ public class OrderEmailListener {
 
 		emailService.sendHtmlEmail(
 				user.getEmail(),
-				"Action Required: Complete your order #" + order.getId(),
+				"Action Required: Complete your order #%s".formatted(order.getId()),
 				"checkout-success",
 				buildCheckoutEmailVariables(order)
 		);
@@ -40,9 +42,8 @@ public class OrderEmailListener {
 	@Async
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handleOrderNotifications(OrderStatusChangedEvent event) {
-		String userEmail = event.user().getEmail();
-		var order = event.order();
-		String orderIdStr = order.getId().toString();
+		String userEmail = event.userEmail();
+		String orderIdStr = event.orderId().toString();
 
 		Map<String, Object> baseModel = Map.of(
 				"appName", application.name(),
@@ -52,25 +53,25 @@ public class OrderEmailListener {
 		);
 
 		Map<String, Object> paidModel = new HashMap<>(baseModel);
-		paidModel.put("items", order.getItems());
-		paidModel.put("totalAmount", order.getTotal() + "MAD");
+		paidModel.put("items", event.items());
+		paidModel.put("totalAmount", event.totalAmount() + "MAD");
 
 		switch (event.status()) {
-			case PAID -> emailService.sendHtmlEmail(
+			case CONFIRMED -> emailService.sendHtmlEmail(
 					userEmail,
-					"Payment Confirmed - Order #" + orderIdStr,
+					"Payment Confirmed - Order #%s".formatted(orderIdStr),
 					"order-success-receipt",
 					paidModel
 			);
 			case CANCELED -> emailService.sendHtmlEmail(
 					userEmail,
-					"Your Order #" + orderIdStr + " has been cancelled",
+					"Your Order #%s has been cancelled".formatted(orderIdStr),
 					"order-canceled",
 					baseModel
 			);
 			case REFUNDED -> emailService.sendHtmlEmail(
 					userEmail,
-					"Refund Confirmed for Order #" + orderIdStr,
+					"Refund Confirmed for Order #%s".formatted(orderIdStr),
 					"order-refunded",
 					baseModel
 			);
@@ -84,7 +85,7 @@ public class OrderEmailListener {
 				"paymentUrl", "%s/orders/%s/pay"
 						.formatted(application.backendUrl(), order.getId()),
 				"orderId", order.getId(),
-				"items", order.getItems().stream().toList(),
+				"items", order.getItems().stream().map(orderItemMapper::toDto).toList(),
 				"totalAmount", "MAD %s".formatted(order.getTotal()),
 				"supportEmail", application.supportEmail(),
 				"year", Year.now().getValue()

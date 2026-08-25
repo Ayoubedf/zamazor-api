@@ -8,6 +8,7 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "application.stripe")
 public record StripeProperties(
 		@NotBlank String publishableKey,
-		@NotBlank String secretKey
+		@NotBlank String secretKey,
+		@NotBlank String webhookSecret
 ) {
 }

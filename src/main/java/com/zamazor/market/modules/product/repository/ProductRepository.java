@@ -25,6 +25,45 @@ public interface ProductRepository extends JpaRepository<Product, UUID>, JpaSpec
 	@Override
 	@NonNull Page<Product> findAll(@NonNull Specification<Product> specification, @NonNull Pageable pageable);
 
+	@Modifying(clearAutomatically = true, flushAutomatically = true)
+	@Query("""
+			UPDATE Product p
+			   SET p.stockQuantity   = p.stockQuantity - :qty,
+			       p.reservedQuantity = p.reservedQuantity + :qty,
+			       p.version          = p.version + 1
+			 WHERE p.id = :id AND p.stockQuantity >= :qty
+			""")
+	int reserveStock(@Param("id") UUID id, @Param("qty") int qty);
+
+	@Modifying(clearAutomatically = true, flushAutomatically = true)
+	@Query("""
+			UPDATE Product p
+			   SET p.stockQuantity   = p.stockQuantity + :qty,
+			       p.reservedQuantity = p.reservedQuantity - :qty,
+			       p.version          = p.version + 1
+			 WHERE p.id = :id AND p.reservedQuantity >= :qty
+			""")
+	int releaseStock(@Param("id") UUID id, @Param("qty") int qty);
+
+	@Modifying(clearAutomatically = true, flushAutomatically = true)
+	@Query("""
+			UPDATE Product p
+			   SET p.reservedQuantity = p.reservedQuantity - :qty,
+			       p.version          = p.version + 1
+			 WHERE p.id = :id AND p.reservedQuantity >= :qty
+			""")
+	int confirmReservation(@Param("id") UUID id, @Param("qty") int qty);
+
+	@Modifying(clearAutomatically = true, flushAutomatically = true)
+	@Query(value = """
+			UPDATE products
+			   SET stock_quantity    = stock_quantity + :qty,
+			       reserved_quantity = GREATEST(reserved_quantity - :qty, 0),
+			       version           = version + 1
+			 WHERE id = :id
+			""", nativeQuery = true)
+	int restoreAvailability(@Param("id") UUID id, @Param("qty") int qty);
+
 	@EntityGraph(attributePaths = {"category"})
 	@NonNull Page<Product> findByIdIn(@NonNull Collection<UUID> ids, @NonNull Pageable pageable);
 

@@ -2,7 +2,7 @@ package com.zamazor.market.modules.catalog.models.mapper;
 
 import com.zamazor.market.modules.catalog.models.entity.Cart;
 import com.zamazor.market.modules.catalog.models.dto.CartDto;
-import com.zamazor.market.shared.model.dto.PricingInfo;
+import com.zamazor.market.shared.model.dto.PricingResult;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -15,5 +15,5 @@ public interface CartMapper {
 	@Mapping(target = "shipping", source = "pricing.shipping")
 	@Mapping(target = "discount", source = "pricing.discount")
 	@Mapping(target = "total", source = "pricing.total")
-	CartDto toDto(Cart cart, PricingInfo pricing);
+	CartDto toDto(Cart cart, PricingResult pricing);
 }

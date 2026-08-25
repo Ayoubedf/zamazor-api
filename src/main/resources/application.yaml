@@ -5,15 +5,22 @@ spring:
     url: ${DB_URL:}
     username: ${DB_USER:}
     password: ${DB_PASS:}
-    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: public
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations:
+      - db/migration
+      - db/seed
   mail:
     host: smtp.gmail.com
     port: 587
@@ -49,8 +56,17 @@ application:
   stripe:
     publishable-key: ${STRIPE_PUBLISHABLE_KEY:}
     secret-key: ${STRIPE_SECRET_KEY:}
+    webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+  shop:
+    order-policy:
+      cancel-window: PT48H
+      refund-window: P30D
+      payment-hold: PT30M
   mail:
     personal-name: "Zamazor Support"
     from-address: ${SMTP_USER:}
   support-email: ${SUPPORT_EMAIL:}
   support-phone: ${SUPPORT_PHONE:}
+logging:
+  level:
+    org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer: Error

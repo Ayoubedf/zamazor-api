@@ -7,6 +7,6 @@ import java.util.UUID;
 
 public class OrderNotFoundException extends DomainException {
 	public OrderNotFoundException(UUID id) {
-		super("Order not found with id: " + id, HttpStatus.NOT_FOUND, "Order Not Found");
+		super("Order not found with id: %s".formatted(id), HttpStatus.NOT_FOUND, "Order Not Found");
 	}
 }
