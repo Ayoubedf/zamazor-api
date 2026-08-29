@@ -73,7 +73,7 @@ public class OrderPaymentService {
 		}
 
 		var order = Order.createFromCart(cart, pricing);
-		order.setPaymentAttemptCount(order.getPaymentAttemptCount() + 1);
+		order.incrementPaymentAttempts();
 
 		var snapshot = new AddressComponent(
 				request.country(),
@@ -159,7 +159,7 @@ public class OrderPaymentService {
 		log.info("payment attempt was '{}', and now '{}'"
 				, order.getPaymentAttemptCount(), order.getPaymentAttemptCount() + 1
 		);
-		order.setPaymentAttemptCount(order.getPaymentAttemptCount() + 1);
+		order.incrementPaymentAttempts();
 		var savedOrder = orderRepository.saveAndFlush(order);
 
 		Session session = paymentService.createCheckoutSession(savedOrder);
