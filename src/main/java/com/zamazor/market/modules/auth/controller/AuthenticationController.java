@@ -39,6 +39,16 @@ public class AuthenticationController {
 		return ResponseEntity.ok(authenticationMapper.toAuthenticationResponse(authenticationResult));
 	}
 
+	@PostMapping("/password-reset/request")
+	public void requestPasswordReset(@Valid @RequestBody PasswordResetRequest request) {
+		authenticationService.requestPasswordReset(request);
+	}
+
+	@PostMapping("/password-reset/confirm")
+	public void resetPassword(@Valid @RequestBody PasswordResetConfirmationRequest request) {
+		authenticationService.resetPassword(request);
+	}
+
 	@PostMapping("/refresh")
 	public ResponseEntity<TokenRefreshResponse> refresh(
 			@CookieValue(name = CookieUtility.REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken,

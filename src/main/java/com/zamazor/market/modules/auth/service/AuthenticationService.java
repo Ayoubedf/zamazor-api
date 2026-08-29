@@ -1,7 +1,9 @@
 package com.zamazor.market.modules.auth.service;
 
-import com.zamazor.market.config.ApplicationProperties;
-import com.zamazor.market.mail.service.EmailService;
+import com.zamazor.market.mail.event.AccountCreatedEvent;
+import com.zamazor.market.mail.event.PasswordChangeEvent;
+import com.zamazor.market.mail.event.ResetPasswordRequestEvent;
+import com.zamazor.market.modules.auth.models.entity.PasswordResetToken;
 import com.zamazor.market.security.crypto.JwtService;
 import com.zamazor.market.modules.auth.exception.EmailAlreadyInUseException;
 import com.zamazor.market.modules.auth.exception.UnauthorizedException;
@@ -12,6 +14,7 @@ import com.zamazor.market.modules.user.models.entity.User;
 import com.zamazor.market.modules.user.repository.UserRepository;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,20 +23,24 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Year;
-import java.util.Map;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.Clock;
 import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
+	private static final Duration RESET_TTL = Duration.ofMinutes(30);
+
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final UserMapper userMapper;
 	private final AuthenticationManager authenticationManager;
 	private final JwtService jwtService;
-	private final EmailService emailService;
-	private final ApplicationProperties application;
+	private final TokenService tokenService;
+	private final ApplicationEventPublisher publisher;
+	private final Clock clock;
 
 	@Transactional
 	public UserDto register(RegisterRequest request) {
@@ -44,7 +51,7 @@ public class AuthenticationService {
 		user.setPassword(Objects.requireNonNull(passwordEncoder.encode(request.password())));
 		user.setIsAdmin(false);
 
-		sendRegistrationSuccessEmail(user.getEmail());
+		publisher.publishEvent(new AccountCreatedEvent(user.getEmail()));
 
 		return userMapper.toDto(userRepository.save(user));
 	}
@@ -61,6 +68,24 @@ public class AuthenticationService {
 		String refreshToken = jwtService.generateRefreshToken(user);
 
 		return new AuthenticationResult(refreshToken, accessToken, userDto);
+	}
+
+	@Transactional
+	public void requestPasswordReset(PasswordResetRequest request) {
+		userRepository.findByEmail(request.email()).ifPresent(user -> {
+			var issued = tokenService.issue(user, RESET_TTL);
+			publisher.publishEvent(new ResetPasswordRequestEvent(user.getEmail(), issued.raw()));
+		});
+	}
+
+	@Transactional
+	public void resetPassword(PasswordResetConfirmationRequest request) {
+		PasswordResetToken token =
+				(PasswordResetToken) tokenService.consume(request.token());
+		var user = token.getUser();
+		user.setPassword(Objects.requireNonNull(passwordEncoder.encode(request.newPassword())));
+		token.markUsed(Instant.now(clock));
+		publisher.publishEvent(new PasswordChangeEvent(user.getEmail()));
 	}
 
 	public TokenPair refreshTokens(String refreshToken) {
@@ -95,22 +120,5 @@ public class AuthenticationService {
 		}
 
 		return userMapper.toDto(user);
-	}
-
-	private void sendRegistrationSuccessEmail(String to) {
-		var link = "%s/login".formatted(application.frontendUrl());
-
-		emailService.sendHtmlEmail(
-				to,
-				"Account Registration Successful!",
-				"registration-success",
-				Map.of(
-						"appName", application.name(),
-						"loginUrl", link,
-						"supportEmail", application.supportEmail(),
-						"supportPhone", application.supportPhone(),
-						"year", Year.now().getValue()
-				)
-		);
 	}
 }
