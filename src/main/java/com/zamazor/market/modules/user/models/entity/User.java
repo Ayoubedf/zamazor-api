@@ -26,7 +26,9 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "users")
+@Table(name = "users", indexes = {
+		@Index(name = "idx_user_email", columnList = "email")
+})
 @Inheritance(strategy = InheritanceType.JOINED)
 @EntityListeners(AuditingEntityListener.class)
 public class User implements UserDetails {
@@ -40,9 +42,14 @@ public class User implements UserDetails {
 	@Column(unique = true, nullable = false)
 	private String email;
 
+	@Nullable
+	@Builder.Default
+	@Column(name = "email_verified_at")
+	private Instant emailVerifiedAt = null;
+
 	@Builder.Default
 	@Column(name = "is_admin", nullable = false)
-	private Boolean isAdmin = false;
+	private boolean isAdmin = false;
 
 	@Column(nullable = false)
 	private String password;
@@ -105,4 +112,12 @@ public class User implements UserDetails {
 	@CreatedDate
 	@Column(name = "created_at", nullable = false)
 	private Instant createdAt;
+
+	public void markEmailVerified(Instant verifiedAt) {
+		this.emailVerifiedAt = verifiedAt;
+	}
+
+	public boolean isEmailVerified() {
+		return this.emailVerifiedAt != null;
+	}
 }
