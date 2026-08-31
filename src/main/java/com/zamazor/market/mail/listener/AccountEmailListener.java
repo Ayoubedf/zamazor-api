@@ -21,8 +21,10 @@ public class AccountEmailListener {
 	@Async
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handleAccountCreatedNotification(AccountCreatedEvent event) {
+		var verificationToken = event.token();
 		var to = event.to();
 		var loginLink = "%s/login".formatted(application.frontendUrl());
+		var verificationLink = "%s/verify-email?token=%s".formatted(application.frontendUrl(), verificationToken);
 
 		emailService.sendHtmlEmail(
 				to,
@@ -30,7 +32,29 @@ public class AccountEmailListener {
 				"registration-success",
 				Map.of(
 						"appName", application.name(),
+						"verificationUrl", verificationLink,
 						"loginUrl", loginLink,
+						"supportEmail", application.supportEmail(),
+						"supportPhone", application.supportPhone(),
+						"year", Year.now().getValue()
+				)
+		);
+	}
+
+	@Async
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	public void handleEmailVerificationNotification(EmailVerificationRequestEvent event) {
+		var verificationToken = event.token();
+		var to = event.to();
+		var verificationLink = "%s/verify-email?token=%s".formatted(application.frontendUrl(), verificationToken);
+
+		emailService.sendHtmlEmail(
+				to,
+				"Verify Your Email",
+				"email-verification",
+				Map.of(
+						"appName", application.name(),
+						"verificationUrl", verificationLink,
 						"supportEmail", application.supportEmail(),
 						"supportPhone", application.supportPhone(),
 						"year", Year.now().getValue()
