@@ -2,7 +2,10 @@ package com.zamazor.market.modules.auth.service;
 
 import com.zamazor.market.modules.auth.exception.TokenInvalidException;
 import com.zamazor.market.modules.auth.models.entity.AbstractToken;
+import com.zamazor.market.modules.auth.models.entity.EmailVerificationToken;
 import com.zamazor.market.modules.auth.models.entity.PasswordResetToken;
+import com.zamazor.market.modules.auth.models.entity.TokenType;
+import com.zamazor.market.modules.auth.repository.EmailVerificationTokenRepository;
 import com.zamazor.market.modules.auth.repository.PasswordResetTokenRepository;
 import com.zamazor.market.modules.user.models.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +33,7 @@ public class TokenService {
 	private static final int TOKEN_BYTES = 32; // 256 bits of entropy
 	private static final SecureRandom RANDOM = new SecureRandom();
 
+	private final EmailVerificationTokenRepository emailVerificationTokenRepository;
 	private final PasswordResetTokenRepository passwordResetTokenRepository;
 	private final Clock clock;
 
@@ -38,16 +42,25 @@ public class TokenService {
 	 * Rotates out any existing unused tokens for the user in that flow.
 	 */
 	@Transactional
-	public IssuedToken issue(User user, Duration ttl) {
+	public IssuedToken issue(User user, TokenType type, Duration ttl) {
 		byte[] bytes = new byte[TOKEN_BYTES];
 		RANDOM.nextBytes(bytes);
 		String raw = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
 		String hash = hashToken(raw);
 		Instant expiresAt = Instant.now(clock).plus(ttl);
-		passwordResetTokenRepository.deleteUnusedForUser(user.getId());
 
-		AbstractToken entity =
-				passwordResetTokenRepository.save(new PasswordResetToken(user, hash, expiresAt));
+		AbstractToken entity = switch (type) {
+			case VERIFY_EMAIL -> {
+				emailVerificationTokenRepository.deleteUnusedForUser(user.getId());
+				yield emailVerificationTokenRepository.save(
+						new EmailVerificationToken(user, hash, expiresAt));
+			}
+			case PASSWORD_RESET -> {
+				passwordResetTokenRepository.deleteUnusedForUser(user.getId());
+				yield passwordResetTokenRepository.save(
+						new PasswordResetToken(user, hash, expiresAt));
+			}
+		};
 		return new IssuedToken(raw, entity);
 	}
 
@@ -55,11 +68,15 @@ public class TokenService {
 	 * Consumes a token from the table matching {@code type}.
 	 */
 	@Transactional
-	public AbstractToken consume(String raw) {
+	public AbstractToken consume(String raw, TokenType type) {
 		String hash = hashToken(raw);
 
-		AbstractToken token = passwordResetTokenRepository.findByTokenHash(hash)
-				.orElseThrow(TokenInvalidException::new);
+		AbstractToken token = switch (type) {
+			case VERIFY_EMAIL -> emailVerificationTokenRepository.findByTokenHash(hash)
+					.orElseThrow(TokenInvalidException::new);
+			case PASSWORD_RESET -> passwordResetTokenRepository.findByTokenHash(hash)
+					.orElseThrow(TokenInvalidException::new);
+		};
 
 		if (!token.isValid(Instant.now(clock))) {
 			throw new TokenInvalidException();
