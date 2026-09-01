@@ -1,9 +1,12 @@
 package com.zamazor.market.modules.auth.service;
 
 import com.zamazor.market.mail.event.AccountCreatedEvent;
+import com.zamazor.market.mail.event.EmailVerificationRequestEvent;
 import com.zamazor.market.mail.event.PasswordChangeEvent;
 import com.zamazor.market.mail.event.ResetPasswordRequestEvent;
+import com.zamazor.market.modules.auth.models.entity.EmailVerificationToken;
 import com.zamazor.market.modules.auth.models.entity.PasswordResetToken;
+import com.zamazor.market.modules.auth.models.entity.TokenType;
 import com.zamazor.market.security.crypto.JwtService;
 import com.zamazor.market.modules.auth.exception.EmailAlreadyInUseException;
 import com.zamazor.market.modules.auth.exception.UnauthorizedException;
@@ -31,6 +34,7 @@ import java.util.Objects;
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
+	private static final Duration VERIFY_TTL = Duration.ofHours(24);
 	private static final Duration RESET_TTL = Duration.ofMinutes(30);
 
 	private final UserRepository userRepository;
@@ -49,11 +53,31 @@ public class AuthenticationService {
 		}
 		var user = userMapper.toEntity(request);
 		user.setPassword(Objects.requireNonNull(passwordEncoder.encode(request.password())));
-		user.setIsAdmin(false);
+		user.setAdmin(false);
+		var savedUser = userRepository.save(user);
+		var issued = tokenService.issue(savedUser, TokenType.VERIFY_EMAIL, VERIFY_TTL);
 
-		publisher.publishEvent(new AccountCreatedEvent(user.getEmail()));
+		publisher.publishEvent(new AccountCreatedEvent(savedUser.getEmail(), issued.raw()));
 
-		return userMapper.toDto(userRepository.save(user));
+		return userMapper.toDto(savedUser);
+	}
+
+	@Transactional
+	public void sendVerificationEmail(String email) {
+		User user = userRepository.findByEmail(email).orElse(null);
+		if (user == null || user.isEmailVerified()) {
+			return; // same response whether the user exists
+		}
+		var issued = tokenService.issue(user, TokenType.VERIFY_EMAIL, VERIFY_TTL);
+		publisher.publishEvent(new EmailVerificationRequestEvent(user.getEmail(), issued.raw()));
+	}
+
+	@Transactional
+	public void verifyEmail(VerifyEmailRequest request) {
+		EmailVerificationToken token =
+				(EmailVerificationToken) tokenService.consume(request.token(), TokenType.VERIFY_EMAIL);
+		token.getUser().markEmailVerified(Instant.now(clock));
+		token.markUsed(Instant.now(clock));
 	}
 
 	public AuthenticationResult authenticate(AuthenticationRequest request) {
@@ -73,7 +97,7 @@ public class AuthenticationService {
 	@Transactional
 	public void requestPasswordReset(PasswordResetRequest request) {
 		userRepository.findByEmail(request.email()).ifPresent(user -> {
-			var issued = tokenService.issue(user, RESET_TTL);
+			var issued = tokenService.issue(user, TokenType.PASSWORD_RESET, RESET_TTL);
 			publisher.publishEvent(new ResetPasswordRequestEvent(user.getEmail(), issued.raw()));
 		});
 	}
@@ -81,7 +105,7 @@ public class AuthenticationService {
 	@Transactional
 	public void resetPassword(PasswordResetConfirmationRequest request) {
 		PasswordResetToken token =
-				(PasswordResetToken) tokenService.consume(request.token());
+				(PasswordResetToken) tokenService.consume(request.token(), TokenType.PASSWORD_RESET);
 		var user = token.getUser();
 		user.setPassword(Objects.requireNonNull(passwordEncoder.encode(request.newPassword())));
 		token.markUsed(Instant.now(clock));

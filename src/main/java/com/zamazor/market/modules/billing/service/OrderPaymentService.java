@@ -115,7 +115,7 @@ public class OrderPaymentService {
 		Order order = orderRepository.findById(orderId)
 				.orElseThrow(() -> new OrderNotFoundException(orderId));
 		if (order.getStatus() == OrderStatus.CONFIRMED) {
-			log.info("Duplicate confirm for order {} — idempotent no-op", orderId);
+			log.debug("Duplicate confirm for order {} — idempotent no-op", orderId);
 			return orderMapper.toDto(order);
 		}
 
@@ -156,9 +156,6 @@ public class OrderPaymentService {
 			throw new IllegalOrderTransitionException("Order Already Processed or completed");
 		}
 
-		log.info("payment attempt was '{}', and now '{}'"
-				, order.getPaymentAttemptCount(), order.getPaymentAttemptCount() + 1
-		);
 		order.incrementPaymentAttempts();
 		var savedOrder = orderRepository.saveAndFlush(order);
 

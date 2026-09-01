@@ -156,7 +156,7 @@ public class PaymentService {
 					Session oldSession = Session.retrieve(oldSessionId);
 					if ("open".equals(oldSession.getStatus())) {
 						oldSession.expire();
-						log.info("Successfully expired old Stripe checkout session {} for order {}", oldSessionId, orderId);
+						log.debug("Successfully expired old Stripe checkout session {} for order {}", oldSessionId, orderId);
 					}
 				} catch (StripeException e) {
 					log.warn("Could not expire previous Stripe session {}: {}", oldSessionId, e.getMessage());
@@ -189,6 +189,15 @@ public class PaymentService {
 			Refund.create(params);
 		} catch (StripeException e) {
 			throw new PaymentGatewayException("Failed to process refund with Stripe: " + e.getMessage());
+		}
+	}
+
+	public Session expireCheckoutSession(String sessionId) {
+		try {
+			Session session = Session.retrieve(sessionId);
+			return session.expire();
+		} catch (StripeException e) {
+			throw new RuntimeException("Failed to expire Stripe checkout session: " + e.getMessage(), e);
 		}
 	}
 
